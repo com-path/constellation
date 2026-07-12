@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ViewMode } from './types'
 import { StoreProvider, useStore } from './store/store'
+import { SyncProvider, useSync } from './sync/SyncContext'
+import { AccountPanel, SyncStatusButton } from './components/AccountPanel'
 import { ConstellationCanvas } from './graph/ConstellationCanvas'
 import type { GraphInput } from './graph/simulation'
 import { activeProposals, attentionItems, bondStrength, capacityNote, weeklySuggestions } from './lib/closeness'
@@ -34,6 +36,14 @@ function AppInner() {
   const [mirrorOpen, setMirrorOpen] = useState(false)
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const [eventHighlight, setEventHighlight] = useState<Set<string> | null>(null)
+  const [accountOpen, setAccountOpen] = useState(false)
+
+  // A signed-in-but-locked sky needs the passphrase before sync resumes —
+  // surface the panel once rather than leaving a silent lock.
+  const sync = useSync()
+  useEffect(() => {
+    if (sync.status === 'locked') setAccountOpen(true)
+  }, [sync.status])
 
   const graphInput: GraphInput = useMemo(
     () => ({
@@ -185,9 +195,12 @@ function AppInner() {
 
       <footer className="foot">
         <span className="muted small">
-          Lives entirely in this browser — nothing leaves your device.
+          {sync.status === 'disabled'
+            ? 'Lives entirely in this browser — nothing leaves your device.'
+            : 'Everything is encrypted on this device — the server only ever sees ciphertext.'}
         </span>
         <span className="foot-links">
+          <SyncStatusButton onClick={() => setAccountOpen(true)} />
           <button className="link small" onClick={() => dispatch({ type: 'reset_demo' })}>
             demo sky
           </button>
@@ -211,6 +224,7 @@ function AppInner() {
       {addingPerson && <AddPersonModal onClose={() => setAddingPerson(false)} />}
       {notePerson && <QuickNoteModal person={notePerson} onClose={() => setNoteFor(null)} />}
       {mirrorOpen && <EffortMirror onClose={() => setMirrorOpen(false)} />}
+      {accountOpen && <AccountPanel onClose={() => setAccountOpen(false)} />}
     </div>
   )
 }
@@ -249,7 +263,9 @@ function NetworkLegend() {
 export default function App() {
   return (
     <StoreProvider>
-      <AppInner />
+      <SyncProvider>
+        <AppInner />
+      </SyncProvider>
     </StoreProvider>
   )
 }

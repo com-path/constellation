@@ -28,6 +28,7 @@ export type Action =
   | { type: 'dismiss_proposal'; key: string }
   | { type: 'reset_demo' }
   | { type: 'clear_all' }
+  | { type: 'load_state'; state: AppState }
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -106,6 +107,9 @@ function reducer(state: AppState, action: Action): AppState {
       return buildSeedState()
     case 'clear_all':
       return { people: [], edges: [], actions: [], events: [], sparkStates: [], dismissedProposals: [] }
+    case 'load_state':
+      // Wholesale replacement — used when a decrypted sky arrives from sync.
+      return action.state
     default:
       return state
   }

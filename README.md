@@ -15,6 +15,13 @@ npm run preview  # serve the production build
 
 The app opens with a demo sky (~28 fictional people) so the visualisation is alive immediately. Use **start fresh** in the footer to begin with an empty sky, or **demo sky** to restore the demo.
 
+### Accounts & sync (optional)
+
+Out of the box the app is pure local-first. To host it as a website with sign-in and
+end-to-end-encrypted sync across devices, follow **[SETUP.md](SETUP.md)** (free Supabase +
+Vercel accounts, ~15 minutes). The sky is encrypted in the browser with a
+passphrase-derived key before upload — the server only ever stores ciphertext.
+
 ## What's here
 
 - **The constellation** — a force-directed celestial graph (D3 force simulation + canvas) with the two-layer system: concentric **rings of closeness** (dynamic — people move) and **connection threads** (fixed — how people know each other is history). You sit at the centre. Star **brightness/warmth** encodes closeness; star **size** encodes bond strength (never popularity); a soft **nebula tint** hangs behind each context cluster. Transitional rings (2 & 4) shimmer; stable rings (1 & 3) are anchored. Recent ring movement leaves a fading comet trail.
