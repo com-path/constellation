@@ -91,6 +91,27 @@ export class StorageMonitor {
   }
 
   /**
+   * Keep a second copy in IndexedDB — separate quota and failure domain from
+   * localStorage, so one being cleared or corrupted doesn't take both.
+   */
+  async mirror(key: string, data: string): Promise<void> {
+    try {
+      await this.writeToIndexedDB(key, data)
+    } catch {
+      // localStorage still holds the working copy
+    }
+  }
+
+  /** Read the IndexedDB copy, used to recover when localStorage comes up empty. */
+  async readMirrorCopy(key: string): Promise<string | null> {
+    try {
+      return await this.readFromIndexedDB(key)
+    } catch {
+      return null
+    }
+  }
+
+  /**
    * Get current storage health status
    */
   async getStatus(): Promise<StorageStatus> {

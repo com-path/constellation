@@ -21,6 +21,7 @@ import type {
 import { pairKey } from '../types'
 import { buildSeedState } from '../data/seed'
 import { takeSnapshot, type BackupReason } from '../lib/backups'
+import { storageMonitor } from '../sync/storageMonitor'
 
 // Local-first (§10.3): the whole state lives in this browser, nowhere else.
 // This data — grief anniversaries, worries, repair notes — never leaves the device.
@@ -205,12 +206,21 @@ function normalizeState(s: AppState): AppState {
   }
 }
 
+// Whether startup found a sky in localStorage. Recorded here, at load time,
+// because by the time effects run the app has already written state back to
+// localStorage — re-checking there would always answer "yes" (and StrictMode's
+// double-mounted effects hit exactly that in dev).
+let hadLocalStateAtStartup = false
+
 function loadInitial(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as AppState
-      if (Array.isArray(parsed.people)) return normalizeState(parsed)
+      if (Array.isArray(parsed.people)) {
+        hadLocalStateAtStartup = true
+        return normalizeState(parsed)
+      }
     }
   } catch {
     // fall through to seed
@@ -231,6 +241,9 @@ const DESTRUCTIVE_REASONS: Partial<Record<Action['type'], BackupReason>> = {
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, loadInitial)
   const [storageError, setStorageError] = useState<string | null>(null)
+  // Gates the IndexedDB mirror: no writes until the one-time recovery check
+  // below has run, or a fresh seed could overwrite a recoverable mirror.
+  const [mirrorReady, setMirrorReady] = useState(false)
   const stateRef = useRef(state)
   stateRef.current = state
 
@@ -240,17 +253,55 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     dispatch(action)
   }, [])
 
+  // Ask the browser to shield this origin's storage from automatic eviction
+  // under disk pressure. Advisory — browsers may decline — but when granted,
+  // localStorage and IndexedDB stop being fair game for silent cleanup.
   useEffect(() => {
+    navigator.storage?.persist?.().catch(() => {})
+  }, [])
+
+  // One-time recovery: if localStorage came up empty (cleared, evicted,
+  // corrupted) but the IndexedDB mirror still holds a sky, bring it back
+  // instead of silently starting the user over on the seed demo.
+  useEffect(() => {
+    if (hadLocalStateAtStartup) {
+      setMirrorReady(true)
+      return
+    }
+    let cancelled = false
+    storageMonitor
+      .readMirrorCopy(STORAGE_KEY)
+      .then((raw) => {
+        if (cancelled || !raw) return
+        const parsed = JSON.parse(raw) as AppState
+        if (Array.isArray(parsed.people) && parsed.people.length > 0) {
+          guardedDispatch({ type: 'load_state', state: parsed })
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setMirrorReady(true)
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    const serialized = JSON.stringify(state)
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+      localStorage.setItem(STORAGE_KEY, serialized)
       setStorageError(null)
     } catch (e) {
       const error = e instanceof Error ? e.message : String(e)
       setStorageError(error)
       console.error('[Store] localStorage write failed:', error)
-      // Attempt IndexedDB fallback (future implementation)
     }
-  }, [state])
+    // Second copy with its own quota and failure domain; also the working
+    // copy of last resort when localStorage itself is failing above.
+    if (mirrorReady) void storageMonitor.mirror(STORAGE_KEY, serialized)
+  }, [state, mirrorReady])
 
   return (
     <StoreContext.Provider value={{ state, dispatch: guardedDispatch }}>

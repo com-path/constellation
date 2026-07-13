@@ -4,6 +4,7 @@ import { StoreProvider, useStore } from './store/store'
 import { SyncProvider, useSync } from './sync/SyncContext'
 import { AccountPanel, SyncStatusButton } from './components/AccountPanel'
 import { BackupsPanel } from './components/BackupsPanel'
+import { DataSafetyNudge } from './components/DataSafetyNudge'
 import { isDemoSky } from './lib/backups'
 import { Tour, TOUR_DONE_KEY } from './components/Tour'
 import { GettingStarted } from './components/GettingStarted'
@@ -189,6 +190,7 @@ function AppInner() {
       {capNotes.length > 0 && view === 'closeness' && (
         <p className="capacity-note">{capNotes[0]}</p>
       )}
+      {!tourOpen && !landingOpen && <DataSafetyNudge onOpenAccount={() => setAccountOpen(true)} />}
 
       <main className="stage">
         {view === 'catalogue' ? (
