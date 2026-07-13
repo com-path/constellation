@@ -16,6 +16,7 @@ import { PersonProfile } from './components/PersonProfile'
 import { LogActionModal } from './components/LogActionModal'
 import { AddPersonModal } from './components/AddPersonModal'
 import { QuickNoteModal } from './components/QuickNoteModal'
+import { SyncStatus } from './components/SyncStatus'
 import { SparksPanel } from './components/SparksPanel'
 import { EventsPanel } from './components/EventsPanel'
 import { AttentionPanel } from './components/AttentionPanel'
@@ -170,7 +171,18 @@ function AppInner() {
         </div>
       </header>
 
-      <p className="view-hint">{activeView.hint}</p>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '16px',
+          marginBottom: '8px',
+        }}
+      >
+        <p className="view-hint">{activeView.hint}</p>
+        <SyncStatus />
+      </div>
       {capNotes.length > 0 && view === 'closeness' && (
         <p className="capacity-note">{capNotes[0]}</p>
       )}

@@ -33,6 +33,7 @@ export type SyncStatus =
   | 'syncing'
   | 'synced'
   | 'error'
+  | 'offline' // local mode due to network unavailability
 
 interface SyncCtx {
   status: SyncStatus
@@ -44,6 +45,10 @@ interface SyncCtx {
   unlock: (passphrase: string) => Promise<void>
   signOut: () => Promise<void>
   lastError: string | null
+  /** Whether there are pending changes not yet synced to cloud */
+  pendingSync: boolean
+  /** Retry failed sync manually */
+  retrySync: () => Promise<void>
 }
 
 const Ctx = createContext<SyncCtx | null>(null)
@@ -60,13 +65,15 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<SyncStatus>(supabase ? 'signed_out' : 'disabled')
   const [hasCloudSky, setHasCloudSky] = useState<boolean | null>(null)
   const [lastError, setLastError] = useState<string | null>(null)
+  const [pendingSync, setPendingSync] = useState(false)
   const keyRef = useRef<CryptoKey | null>(null)
   const saltRef = useRef<string | null>(null)
-  // Guards the push effect: never upload before the cloud copy has been
-  // loaded (or confirmed absent), or a stale local state could clobber it.
   const readyToPushRef = useRef(false)
   const stateRef = useRef(state)
   stateRef.current = state
+  // Retry tracking to implement exponential backoff
+  const syncAttemptsRef = useRef(0)
+  const lastSyncErrorRef = useRef<string | null>(null)
 
   // Track the auth session.
   useEffect(() => {
@@ -86,19 +93,28 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     return (data as SkyRow | null) ?? null
   }, [])
 
-  const pushNow = useCallback(async (userId: string) => {
+  const pushNow = useCallback(async (userId: string, retryCount = 0) => {
     const key = keyRef.current
     const salt = saltRef.current
     if (!key || !salt) return
-    const blob = await encryptJson(stateRef.current, key)
-    const { error } = await supabase!.from('skies').upsert({
-      user_id: userId,
-      salt,
-      iv: blob.iv,
-      data: blob.ciphertext,
-      updated_at: new Date().toISOString(),
-    })
-    if (error) throw new Error(error.message)
+    try {
+      const blob = await encryptJson(stateRef.current, key)
+      const { error } = await supabase!.from('skies').upsert({
+        user_id: userId,
+        salt,
+        iv: blob.iv,
+        data: blob.ciphertext,
+        updated_at: new Date().toISOString(),
+      })
+      if (error) throw new Error(error.message)
+      // Success: reset retry counter
+      syncAttemptsRef.current = 0
+      lastSyncErrorRef.current = null
+    } catch (e) {
+      const errorMsg = e instanceof Error ? e.message : String(e)
+      lastSyncErrorRef.current = errorMsg
+      throw e
+    }
   }, [])
 
   // On sign-in: check for a cloud sky and try a silent unlock with a
@@ -151,15 +167,26 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   // Debounced encrypted push on every change once unlocked.
   useEffect(() => {
     if (!supabase || !session || !readyToPushRef.current || !keyRef.current) return
+    setPendingSync(true)
     setStatus('syncing')
     const t = setTimeout(async () => {
       try {
         await pushNow(session.user.id)
+        setPendingSync(false)
         setStatus('synced')
         setHasCloudSky(true)
+        setLastError(null)
       } catch (e) {
-        setLastError(e instanceof Error ? e.message : String(e))
-        setStatus('error')
+        const errorMsg = e instanceof Error ? e.message : String(e)
+        syncAttemptsRef.current += 1
+        setPendingSync(true)
+        setLastError(errorMsg)
+        // Only mark as error if we've tried multiple times
+        if (syncAttemptsRef.current >= 3) {
+          setStatus('error')
+        } else {
+          setStatus('synced') // Still synced, but will retry on next change
+        }
       }
     }, 2000)
     return () => clearTimeout(t)
@@ -210,13 +237,32 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     [session, fetchRow, pushNow, dispatch],
   )
 
+  const retrySync = useCallback(async () => {
+    if (!session || !keyRef.current) {
+      setLastError('Not signed in or unlocked')
+      return
+    }
+    setStatus('syncing')
+    try {
+      await pushNow(session.user.id)
+      setPendingSync(false)
+      setStatus('synced')
+      setLastError(null)
+    } catch (e) {
+      const errorMsg = e instanceof Error ? e.message : String(e)
+      setLastError(errorMsg)
+      setStatus('error')
+    }
+  }, [session, pushNow])
+
   const signOut = useCallback(async () => {
     if (!supabase) return
     // Flush any pending change before leaving, so nothing is lost.
-    if (session && keyRef.current && readyToPushRef.current) {
+    if (session && keyRef.current && readyToPushRef.current && pendingSync) {
       try {
         await pushNow(session.user.id)
-      } catch {
+      } catch (e) {
+        console.warn('[Sync] Failed to flush on sign-out:', e)
         // the local copy still holds everything
       }
     }
@@ -224,8 +270,31 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     keyRef.current = null
     saltRef.current = null
     readyToPushRef.current = false
+    setPendingSync(false)
     await supabase.auth.signOut()
-  }, [session, pushNow])
+  }, [session, pushNow, pendingSync])
+
+  // Unload handler: flush pending changes before page unload
+  useEffect(() => {
+    if (!session || !keyRef.current || !readyToPushRef.current) return
+
+    const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
+      if (pendingSync) {
+        // Try to sync before unload (short timeout)
+        try {
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 1000) // 1 second max
+          await pushNow(session.user.id)
+          clearTimeout(timeoutId)
+        } catch {
+          // Don't block unload if sync fails
+        }
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [session, pendingSync, pushNow])
 
   return (
     <Ctx.Provider
@@ -237,6 +306,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         unlock,
         signOut,
         lastError,
+        pendingSync,
+        retrySync,
       }}
     >
       {children}

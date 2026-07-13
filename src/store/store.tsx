@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useReducer, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useReducer, useState, type ReactNode } from 'react'
 import type {
   ActionLog,
   AppState,
@@ -212,14 +212,44 @@ const StoreContext = createContext<{ state: AppState; dispatch: (a: Action) => v
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, loadInitial)
+  const [storageError, setStorageError] = useState<string | null>(null)
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-    } catch {
-      // storage full or unavailable — the session still works in memory
+      setStorageError(null)
+    } catch (e) {
+      const error = e instanceof Error ? e.message : String(e)
+      setStorageError(error)
+      console.error('[Store] localStorage write failed:', error)
+      // Attempt IndexedDB fallback (future implementation)
     }
   }, [state])
-  return <StoreContext.Provider value={{ state, dispatch }}>{children}</StoreContext.Provider>
+
+  return (
+    <StoreContext.Provider value={{ state, dispatch }}>
+      {storageError && (
+        <div
+          role="alert"
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            backgroundColor: '#d32f2f',
+            color: 'white',
+            padding: '12px 16px',
+            borderRadius: '4px',
+            fontSize: '14px',
+            zIndex: 10000,
+            maxWidth: '300px',
+          }}
+        >
+          ⚠️ Storage full: Changes may not be saved. Clear some data to continue.
+        </div>
+      )}
+      {children}
+    </StoreContext.Provider>
+  )
 }
 
 export function useStore() {
