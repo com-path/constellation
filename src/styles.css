@@ -757,6 +757,94 @@ textarea.wide {
   gap: 0.8rem;
 }
 
+/* ——— Tour ——— */
+.tour-card {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 2.6rem;
+  z-index: 60;
+  width: min(30rem, calc(100vw - 2rem));
+  background: #10162e;
+  border: 1px solid rgba(217, 185, 108, 0.45);
+  border-radius: 14px;
+  padding: 0.9rem 1.15rem 0.8rem;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.55);
+}
+
+.tour-card h3 {
+  margin: 0.2rem 0 0.3rem;
+  font-family: Georgia, serif;
+  font-weight: 500;
+  color: #f0e9d8;
+  font-size: 1.05rem;
+}
+
+.tour-card p {
+  margin: 0 0 0.5rem;
+  color: var(--ink-secondary);
+  font-size: 0.9rem;
+}
+
+.tour-progress {
+  display: flex;
+  gap: 0.3rem;
+  margin-bottom: 0.2rem;
+}
+
+.tour-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(217, 185, 108, 0.25);
+}
+
+.tour-dot-on {
+  background: var(--accent);
+}
+
+.tour-actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.tour-spacer {
+  flex: 1;
+}
+
+/* ——— Getting-started nudge ——— */
+.nudge-card {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  width: 18rem;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+  backdrop-filter: blur(6px);
+}
+
+.nudge-card h4 {
+  margin: 0 0 0.25rem;
+  font-family: Georgia, serif;
+  font-weight: 500;
+  color: #ecdfba;
+  font-size: 0.95rem;
+}
+
+.nudge-card p {
+  margin: 0 0 0.3rem;
+  color: var(--ink-secondary);
+  font-size: 0.84rem;
+}
+
+.nudge-close {
+  float: right;
+  margin: -0.2rem -0.4rem 0 0;
+}
+
 .sync-error {
   margin: 0.6rem 0 0;
   padding: 0.5rem 0.7rem;

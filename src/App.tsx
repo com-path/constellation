@@ -3,6 +3,8 @@ import type { ViewMode } from './types'
 import { StoreProvider, useStore } from './store/store'
 import { SyncProvider, useSync } from './sync/SyncContext'
 import { AccountPanel, SyncStatusButton } from './components/AccountPanel'
+import { Tour, TOUR_DONE_KEY } from './components/Tour'
+import { GettingStarted } from './components/GettingStarted'
 import { ConstellationCanvas } from './graph/ConstellationCanvas'
 import type { GraphInput } from './graph/simulation'
 import { activeProposals, attentionItems, bondStrength, capacityNote, weeklySuggestions } from './lib/closeness'
@@ -37,6 +39,9 @@ function AppInner() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const [eventHighlight, setEventHighlight] = useState<Set<string> | null>(null)
   const [accountOpen, setAccountOpen] = useState(false)
+  const [tourOpen, setTourOpen] = useState(
+    () => localStorage.getItem(TOUR_DONE_KEY) !== 'done',
+  )
 
   // A signed-in-but-locked sky needs the passphrase before sync resumes —
   // surface the panel once rather than leaving a silent lock.
@@ -190,7 +195,15 @@ function AppInner() {
           />
         )}
 
-        {view === 'closeness' && <ProposalToasts proposals={proposals} />}
+        {view === 'closeness' && !tourOpen && <ProposalToasts proposals={proposals} />}
+
+        {view === 'closeness' && !tourOpen && !selected && (
+          <GettingStarted
+            onAddPerson={() => setAddingPerson(true)}
+            onLogMoment={() => setLogWith([])}
+            onOpenPerson={setSelectedId}
+          />
+        )}
       </main>
 
       <footer className="foot">
@@ -201,6 +214,9 @@ function AppInner() {
         </span>
         <span className="foot-links">
           <SyncStatusButton onClick={() => setAccountOpen(true)} />
+          <button className="link small" onClick={() => setTourOpen(true)}>
+            tour
+          </button>
           <button className="link small" onClick={() => dispatch({ type: 'reset_demo' })}>
             demo sky
           </button>
@@ -225,6 +241,21 @@ function AppInner() {
       {notePerson && <QuickNoteModal person={notePerson} onClose={() => setNoteFor(null)} />}
       {mirrorOpen && <EffortMirror onClose={() => setMirrorOpen(false)} />}
       {accountOpen && <AccountPanel onClose={() => setAccountOpen(false)} />}
+      {tourOpen && (
+        <Tour
+          ctx={{ setView, setSelectedId, setMirrorOpen }}
+          onFinish={(startFresh) => {
+            localStorage.setItem(TOUR_DONE_KEY, 'done')
+            setTourOpen(false)
+            setMirrorOpen(false)
+            if (startFresh) {
+              dispatch({ type: 'clear_all' })
+              setSelectedId(null)
+              setView('closeness')
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

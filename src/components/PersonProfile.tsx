@@ -247,6 +247,8 @@ export function PersonProfile({
           />
         </section>
 
+        <ThreadsSection person={person} />
+
         <section>
           <h3>Their people</h3>
           <EditableList
@@ -298,6 +300,90 @@ export function PersonProfile({
         </section>
       </div>
     </aside>
+  )
+}
+
+/** Threads: who this person knows in your sky, and how. Fixed history (§2.3),
+ *  but you can record a thread you forgot to draw when adding them. */
+function ThreadsSection({ person }: { person: Person }) {
+  const { state, dispatch } = useStore()
+  const [otherId, setOtherId] = useState('')
+  const [context, setContext] = useState('')
+
+  const threads = state.edges
+    .filter((e) => e.a === person.id || e.b === person.id)
+    .map((e) => ({
+      edge: e,
+      other: state.people.find((p) => p.id === (e.a === person.id ? e.b : e.a)),
+    }))
+    .filter((t) => t.other)
+
+  const connectedIds = new Set(threads.map((t) => t.other!.id))
+  const candidates = state.people
+    .filter((p) => p.id !== person.id && !connectedIds.has(p.id))
+    .sort((a, b) => a.name.localeCompare(b.name))
+
+  return (
+    <section>
+      <h3>Threads</h3>
+      {threads.length === 0 && (
+        <p className="hint">Nobody in your sky is linked to {person.name} yet.</p>
+      )}
+      <ul className="dates-list">
+        {threads.map(({ edge, other }) => (
+          <li key={other!.id}>
+            <span>
+              {other!.name}
+              <span className="muted small"> — {edge.context}</span>
+              {edge.introducedByUser && <em className="muted small"> · you drew this</em>}
+            </span>
+            <button
+              className="icon-btn subtle"
+              aria-label={`Remove thread to ${other!.name}`}
+              onClick={() => dispatch({ type: 'remove_edge', a: edge.a, b: edge.b })}
+            >
+              ×
+            </button>
+          </li>
+        ))}
+      </ul>
+      {candidates.length > 0 && (
+        <div className="add-row">
+          <select value={otherId} onChange={(e) => setOtherId(e.target.value)}>
+            <option value="">Knows…</option>
+            {candidates.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <input
+            placeholder="How? (e.g. university)"
+            value={context}
+            onChange={(e) => setContext(e.target.value)}
+          />
+          <button
+            className="btn small"
+            disabled={!otherId}
+            onClick={() => {
+              dispatch({
+                type: 'add_edge',
+                edge: {
+                  a: person.id,
+                  b: otherId,
+                  context: context.trim() || 'Know each other',
+                  introducedByUser: false,
+                },
+              })
+              setOtherId('')
+              setContext('')
+            }}
+          >
+            Add
+          </button>
+        </div>
+      )}
+    </section>
   )
 }
 

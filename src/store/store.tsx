@@ -26,6 +26,8 @@ export type Action =
   | { type: 'remove_event'; eventId: string }
   | { type: 'set_spark_status'; a: string; b: string; status: SparkStatus; context?: string }
   | { type: 'dismiss_proposal'; key: string }
+  | { type: 'add_edge'; edge: Edge }
+  | { type: 'remove_edge'; a: string; b: string }
   | { type: 'reset_demo' }
   | { type: 'clear_all' }
   | { type: 'load_state'; state: AppState }
@@ -94,6 +96,16 @@ function reducer(state: AppState, action: Action): AppState {
         edges,
         sparkStates: [...rest, { pairKey: key, status: action.status, at: Date.now() }],
       }
+    }
+    case 'add_edge': {
+      const key = pairKey(action.edge.a, action.edge.b)
+      if (action.edge.a === action.edge.b) return state
+      if (state.edges.some((e) => pairKey(e.a, e.b) === key)) return state
+      return { ...state, edges: [...state.edges, action.edge] }
+    }
+    case 'remove_edge': {
+      const key = pairKey(action.a, action.b)
+      return { ...state, edges: state.edges.filter((e) => pairKey(e.a, e.b) !== key) }
     }
     case 'dismiss_proposal':
       return {
