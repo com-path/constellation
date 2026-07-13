@@ -24,6 +24,8 @@ export interface SimNode extends SimulationNodeDatum {
   contexts: string[]
   contextAngle: number
   twinklePhase: number
+  /** Set when the user drags the star to a spot — their placement wins over the layout. */
+  pinnedAngle?: boolean
 }
 
 export interface SimLink extends SimulationLinkDatum<SimNode> {
@@ -61,7 +63,6 @@ export interface ConstellationSim {
   setRadius(R: number): void
   /** Merge new data, preserving positions of existing stars. */
   update(input: GraphInput, R: number): void
-  contextAngles: Map<string, number>
 }
 
 function hashString(s: string): number {
@@ -70,24 +71,41 @@ function hashString(s: string): number {
   return Math.abs(h)
 }
 
-/** Stable angle per context so clusters occupy consistent sectors of the sky. */
-function computeContextAngles(nodes: GraphInput['nodes']): Map<string, number> {
-  const contexts = [...new Set(nodes.flatMap((n) => n.contexts))].sort()
+/**
+ * One angular slot per star. Each context gets an arc proportional to how many
+ * people it holds, and its members spread evenly across that arc — so a sky
+ * where everyone came from two contexts still fills the whole circle instead
+ * of bunching into two knots. Slots are stable (sorted by id) across reloads.
+ */
+function computeSlotAngles(nodes: GraphInput['nodes']): Map<string, number> {
+  const groups = new Map<string, string[]>()
+  for (const n of [...nodes].sort((a, b) => a.id.localeCompare(b.id))) {
+    const c = n.contexts[0] ?? 'Elsewhere'
+    if (!groups.has(c)) groups.set(c, [])
+    groups.get(c)!.push(n.id)
+  }
+  const contexts = [...groups.keys()].sort()
+  const total = Math.max(1, nodes.length)
   const map = new Map<string, number>()
-  contexts.forEach((c, i) => {
-    map.set(c, (i / Math.max(1, contexts.length)) * Math.PI * 2 - Math.PI / 2)
-  })
+  let cursor = -Math.PI / 2
+  for (const c of contexts) {
+    const members = groups.get(c)!
+    const arc = (members.length / total) * Math.PI * 2
+    members.forEach((id, i) => {
+      map.set(id, cursor + ((i + 0.5) / members.length) * arc)
+    })
+    cursor += arc
+  }
   return map
 }
 
 export function createConstellationSim(input: GraphInput, R: number): ConstellationSim {
-  let contextAngles = computeContextAngles(input.nodes)
+  let slotAngles = computeSlotAngles(input.nodes)
   let currentR = R
 
   const makeNode = (n: GraphInput['nodes'][number]): SimNode => {
     const angle =
-      (contextAngles.get(n.contexts[0]) ?? 0) +
-      ((hashString(n.id) % 100) / 100 - 0.5) * 0.9
+      (slotAngles.get(n.id) ?? 0) + ((hashString(n.id) % 100) / 100 - 0.5) * 0.12
     const r = ringRadius(n.ring, currentR)
     return {
       ...n,
@@ -116,8 +134,8 @@ export function createConstellationSim(input: GraphInput, R: number): Constellat
       const r = ringRadius(n.ring, currentR)
       const tx = Math.cos(n.contextAngle) * r
       const ty = Math.sin(n.contextAngle) * r
-      n.vx = (n.vx ?? 0) + (tx - (n.x ?? 0)) * 0.012 * alpha
-      n.vy = (n.vy ?? 0) + (ty - (n.y ?? 0)) * 0.012 * alpha
+      n.vx = (n.vx ?? 0) + (tx - (n.x ?? 0)) * 0.02 * alpha
+      n.vy = (n.vy ?? 0) + (ty - (n.y ?? 0)) * 0.02 * alpha
     }
   }
 
@@ -141,7 +159,6 @@ export function createConstellationSim(input: GraphInput, R: number): Constellat
     get links() {
       return links
     },
-    contextAngles,
     setRadius(newR: number) {
       currentR = newR
       link.distance(currentR * 0.16)
@@ -150,8 +167,7 @@ export function createConstellationSim(input: GraphInput, R: number): Constellat
     },
     update(newInput: GraphInput, newR: number) {
       currentR = newR
-      contextAngles = computeContextAngles(newInput.nodes)
-      api.contextAngles = contextAngles
+      slotAngles = computeSlotAngles(newInput.nodes)
       const existing = new Map(nodes.map((n) => [n.id, n]))
       nodes = newInput.nodes.map((n) => {
         const prev = existing.get(n.id)
@@ -160,9 +176,12 @@ export function createConstellationSim(input: GraphInput, R: number): Constellat
           prev.mass = n.mass
           prev.contexts = n.contexts
           prev.name = n.name
-          prev.contextAngle =
-            (contextAngles.get(n.contexts[0]) ?? 0) +
-            ((hashString(n.id) % 100) / 100 - 0.5) * 0.9
+          // A hand-placed star stays where the user put it.
+          if (!prev.pinnedAngle) {
+            prev.contextAngle =
+              (slotAngles.get(n.id) ?? 0) +
+              ((hashString(n.id) % 100) / 100 - 0.5) * 0.12
+          }
           return prev
         }
         return makeNode(n)

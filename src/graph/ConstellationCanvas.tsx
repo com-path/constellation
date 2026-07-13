@@ -152,19 +152,77 @@ export function ConstellationCanvas(props: Props) {
       }
       return best
     }
+    // Drag a star to re-arrange it around its orbit; a plain click opens its page.
+    const drag: { node: SimNode | null; moved: boolean; sx: number; sy: number } = {
+      node: null,
+      moved: false,
+      sx: 0,
+      sy: 0,
+    }
+    function onDown(e: MouseEvent) {
+      const { x, y } = toCentered(e)
+      const n = nodeAt(x, y)
+      if (!n) return
+      drag.node = n
+      drag.moved = false
+      drag.sx = x
+      drag.sy = y
+      simRef.current?.sim.alphaTarget(0.15).restart()
+    }
     function onMove(e: MouseEvent) {
       const { x, y } = toCentered(e)
+      if (drag.node) {
+        if (Math.hypot(x - drag.sx, y - drag.sy) > 4) drag.moved = true
+        // Angle follows the pointer; the radius stays true to the ring —
+        // closeness is set on the person's page, not by dragging.
+        const angle = Math.atan2(y, x)
+        const r = ringRadius(drag.node.ring, sizeRef.current.R)
+        drag.node.fx = Math.cos(angle) * r
+        drag.node.fy = Math.sin(angle) * r
+        canvas!.style.cursor = 'grabbing'
+        return
+      }
       const n = nodeAt(x, y)
       hoverRef.current = n?.id ?? null
       canvas!.style.cursor = n ? 'pointer' : 'default'
     }
-    function onClick(e: MouseEvent) {
+    function onUp(e: MouseEvent) {
+      const n = drag.node
+      if (!n) return
+      drag.node = null
+      simRef.current?.sim.alphaTarget(0.008)
+      if (!drag.moved) {
+        n.fx = null
+        n.fy = null
+        propsRef.current.onSelect(n.id)
+        return
+      }
       const { x, y } = toCentered(e)
-      const n = nodeAt(x, y)
-      propsRef.current.onSelect(n?.id ?? null)
+      n.contextAngle = Math.atan2(y, x)
+      n.pinnedAngle = true // the user's placement wins from now on
+      n.fx = null
+      n.fy = null
+      canvas!.style.cursor = 'pointer'
     }
+    function onLeave() {
+      if (drag.node) {
+        drag.node.fx = null
+        drag.node.fy = null
+        drag.node = null
+        simRef.current?.sim.alphaTarget(0.008)
+      }
+      hoverRef.current = null
+    }
+    function onBackdropClick(e: MouseEvent) {
+      // Deselect only on a true empty-space click (downs on stars are handled above).
+      const { x, y } = toCentered(e)
+      if (!nodeAt(x, y) && !drag.moved) propsRef.current.onSelect(null)
+    }
+    canvas.addEventListener('mousedown', onDown)
     canvas.addEventListener('mousemove', onMove)
-    canvas.addEventListener('click', onClick)
+    canvas.addEventListener('mouseup', onUp)
+    canvas.addEventListener('mouseleave', onLeave)
+    canvas.addEventListener('click', onBackdropClick)
 
     let raf = 0
     const draw = () => {
@@ -394,8 +452,11 @@ export function ConstellationCanvas(props: Props) {
     return () => {
       cancelAnimationFrame(raf)
       ro.disconnect()
+      canvas.removeEventListener('mousedown', onDown)
       canvas.removeEventListener('mousemove', onMove)
-      canvas.removeEventListener('click', onClick)
+      canvas.removeEventListener('mouseup', onUp)
+      canvas.removeEventListener('mouseleave', onLeave)
+      canvas.removeEventListener('click', onBackdropClick)
       simRef.current?.sim.stop()
       simRef.current = null
     }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ActionLog, Person, Ring } from '../types'
 import {
   ACTION_TYPE_META,
@@ -41,6 +41,15 @@ export function PersonProfile({
 }) {
   const { state, dispatch } = useStore()
   const [confirmRemove, setConfirmRemove] = useState(false)
+
+  // Escape closes the page — every edit is already saved the moment it's made.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   const history = useMemo(
     () =>
@@ -377,6 +386,10 @@ export function PersonProfile({
             </section>
           </div>
         </div>
+
+        <button className="btn person-done" onClick={onClose} title="Everything saves as you type — this just returns to the sky (Esc works too)">
+          ✓ Done — changes saved
+        </button>
       </aside>
     </div>
   )
