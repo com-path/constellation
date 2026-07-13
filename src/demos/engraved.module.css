@@ -1,0 +1,364 @@
+/* Demo A — "Engraved Atlas". All tokens scoped to .page; nothing global. */
+
+.page {
+  --ea-ground: #0a0a0c;
+  --ea-ink: #ffffff;
+  --ea-grey: #8b93a3;
+  --ea-hairline: rgba(255, 255, 255, 0.28);
+  --ea-serif: 'Didot', 'Bodoni MT', 'Playfair Display', 'Georgia', serif;
+  --ea-sans: 'Avenir Next', 'Helvetica Neue', 'Arial', sans-serif;
+
+  position: relative;
+  min-height: 100vh;
+  overflow-x: clip;
+  background: var(--ea-ground);
+  color: var(--ea-ink);
+  font-family: var(--ea-sans);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.page ::selection {
+  background: var(--ea-ink);
+  color: var(--ea-ground);
+}
+
+/* ---- fixed decorative layers ---------------------------------------- */
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.grain {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.05;
+  z-index: 3;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- chart-annotation label style ----------------------------------- */
+
+.label {
+  font-family: var(--ea-sans);
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ea-grey);
+}
+
+/* ---- header ----------------------------------------------------------- */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 26px 24px;
+}
+
+.brand {
+  composes: label;
+  color: var(--ea-ink);
+  text-decoration: none;
+}
+
+.navLinks {
+  display: flex;
+  gap: 28px;
+}
+
+.navLinks a {
+  font-family: var(--ea-sans);
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ea-grey);
+  text-decoration: none;
+}
+
+.navLinks a:hover {
+  color: var(--ea-ink);
+}
+
+@media (max-width: 560px) {
+  .navLinks {
+    display: none;
+  }
+}
+
+/* ---- hero ------------------------------------------------------------- */
+
+.hero {
+  position: relative;
+  text-align: center;
+  padding: 48px 24px 96px;
+}
+
+/* crosshair axis lines extending to the page edges through the mark */
+.axisX,
+.axisY {
+  position: absolute;
+  background: var(--ea-hairline);
+  pointer-events: none;
+}
+
+.markWrap {
+  position: relative;
+}
+
+.axisX {
+  top: 50%;
+  left: 50%;
+  width: 100vw;
+  height: 1px;
+  transform: translate(-50%, -50%);
+}
+
+.axisY {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+}
+
+.mark {
+  width: min(480px, 88vw);
+  height: auto;
+  display: block;
+  margin: 0 auto 56px;
+}
+
+.rotateSlow {
+  animation: eaSpin 240s linear infinite;
+  transform-origin: 300px 300px;
+}
+
+@keyframes eaSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.twinkle {
+  animation: eaTwinkle 5s ease-in-out infinite;
+}
+
+@keyframes eaTwinkle {
+  0%,
+  100% {
+    opacity: var(--tw-hi, 0.9);
+  }
+  50% {
+    opacity: var(--tw-lo, 0.15);
+  }
+}
+
+.kicker {
+  composes: label;
+  display: inline-block;
+  padding: 6px 18px;
+  border: 1px solid var(--ea-hairline);
+  border-radius: 999px;
+  background: var(--ea-ground);
+}
+
+.headline {
+  font-family: var(--ea-serif);
+  font-weight: 400;
+  font-size: clamp(40px, 6.5vw, 78px);
+  line-height: 1.08;
+  letter-spacing: 0.01em;
+  margin: 28px auto 0;
+  max-width: 16ch;
+  background: var(--ea-ground);
+}
+
+.subhead {
+  color: var(--ea-grey);
+  max-width: 54ch;
+  margin: 22px auto 0;
+  background: var(--ea-ground);
+}
+
+.ctaRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 40px;
+}
+
+.ctaPrimary,
+.ctaSecondary {
+  font-family: var(--ea-sans);
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  display: inline-block;
+  padding: 14px 30px;
+  text-decoration: none;
+  border: 1px solid var(--ea-ink);
+}
+
+.ctaPrimary {
+  color: var(--ea-ground);
+  background: var(--ea-ink);
+}
+
+.ctaPrimary:hover {
+  background: transparent;
+  color: var(--ea-ink);
+}
+
+.ctaSecondary {
+  color: var(--ea-ink);
+  background: var(--ea-ground);
+}
+
+.ctaSecondary:hover {
+  border-color: var(--ea-ink);
+  color: var(--ea-ink);
+}
+
+/* ---- constellation divider ------------------------------------------- */
+
+.divider {
+  display: block;
+  margin: 0 auto;
+  width: min(420px, 80vw);
+  height: auto;
+}
+
+/* ---- features ---------------------------------------------------------- */
+
+.features {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 88px 24px;
+}
+
+.sectionLabel {
+  composes: label;
+  display: block;
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--ea-hairline);
+  border: 1px solid var(--ea-hairline);
+}
+
+@media (max-width: 860px) {
+  .featureGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.featureCard {
+  background: var(--ea-ground);
+  padding: 44px 32px;
+  text-align: center;
+}
+
+.medallion {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 26px;
+  display: block;
+}
+
+.featureTitle {
+  font-family: var(--ea-serif);
+  font-weight: 400;
+  font-size: 26px;
+  margin: 0 0 12px;
+}
+
+.featureBody {
+  color: var(--ea-grey);
+  font-size: 15px;
+  margin: 0;
+}
+
+/* ---- about -------------------------------------------------------------- */
+
+.about {
+  text-align: center;
+  padding: 88px 24px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.aboutTitle {
+  font-family: var(--ea-serif);
+  font-weight: 400;
+  font-size: clamp(30px, 4vw, 44px);
+  margin: 24px 0 18px;
+}
+
+.aboutBody {
+  color: var(--ea-grey);
+  margin: 0;
+}
+
+/* ---- footer -------------------------------------------------------------- */
+
+.footer {
+  border-top: 1px solid var(--ea-hairline);
+  padding: 40px 24px 56px;
+  text-align: center;
+}
+
+.footerLine {
+  composes: label;
+  display: block;
+  margin-bottom: 22px;
+}
+
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 28px;
+}
+
+.footerLinks a {
+  font-family: var(--ea-sans);
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ea-grey);
+  text-decoration: none;
+}
+
+.footerLinks a:hover {
+  color: var(--ea-ink);
+}
+
+/* ---- reduced motion --------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .rotateSlow,
+  .twinkle {
+    animation: none;
+  }
+}

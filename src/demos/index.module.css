@@ -1,0 +1,123 @@
+/* /demos index — deliberately neutral so it doesn't bias the comparison. */
+
+.page {
+  --dx-bg: #111114;
+  --dx-ink: #efeeea;
+  --dx-muted: #9a9aa2;
+  --dx-line: rgba(239, 238, 234, 0.16);
+
+  min-height: 100vh;
+  background: var(--dx-bg);
+  color: var(--dx-ink);
+  font-family: 'Avenir Next', 'Helvetica Neue', 'Arial', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  padding: 64px 24px 96px;
+}
+
+.inner {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.kicker {
+  font-size: 11px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--dx-muted);
+}
+
+.title {
+  font-family: 'Georgia', serif;
+  font-weight: 400;
+  font-size: clamp(30px, 4.5vw, 44px);
+  margin: 14px 0 10px;
+}
+
+.lede {
+  color: var(--dx-muted);
+  margin: 0 0 48px;
+  max-width: 56ch;
+}
+
+.list {
+  display: grid;
+  gap: 16px;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border: 1px solid var(--dx-line);
+  border-radius: 10px;
+  padding: 22px 24px;
+  text-decoration: none;
+  color: var(--dx-ink);
+}
+
+.card:hover {
+  border-color: var(--dx-muted);
+}
+
+.swatches {
+  display: flex;
+  flex: none;
+  gap: 5px;
+}
+
+.swatch {
+  width: 16px;
+  height: 40px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.cardTitle {
+  font-family: 'Georgia', serif;
+  font-size: 21px;
+  margin: 0 0 4px;
+}
+
+.cardDesc {
+  color: var(--dx-muted);
+  font-size: 14.5px;
+  margin: 0;
+}
+
+.route {
+  font-size: 12px;
+  color: var(--dx-muted);
+  letter-spacing: 0.06em;
+}
+
+.back {
+  display: inline-block;
+  margin-top: 44px;
+  color: var(--dx-muted);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.back:hover {
+  color: var(--dx-ink);
+}
+
+@media (max-width: 520px) {
+  .card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .swatches {
+    order: -1;
+  }
+
+  .swatch {
+    width: 32px;
+    height: 14px;
+  }
+}

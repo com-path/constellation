@@ -1,0 +1,372 @@
+/* Demo B — "Woodcut Sky". All tokens scoped to .page; nothing global. */
+
+.page {
+  --wc-cream: #f7f1e8;
+  --wc-sage: #8faf9b;
+  --wc-mustard: #f0c04a;
+  --wc-plum: #3a2a33;
+  --wc-serif: 'Cooper Black', 'Recoleta', 'Georgia', serif;
+  --wc-sans: 'Avenir Next', 'Futura', 'Trebuchet MS', sans-serif;
+
+  position: relative;
+  min-height: 100vh;
+  overflow-x: clip;
+  background: var(--wc-cream);
+  color: var(--wc-plum);
+  font-family: var(--wc-sans);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.page ::selection {
+  background: var(--wc-mustard);
+  color: var(--wc-plum);
+}
+
+.grain {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.06;
+  z-index: 3;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+}
+
+/* the registration-offset ghost: everything inside prints flat sage, no ink */
+.regGhost path,
+.regGhost circle,
+.regGhost polygon,
+.regGhost line {
+  fill: var(--wc-sage);
+  stroke: none;
+}
+
+/* ---- header ------------------------------------------------------------ */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.brand {
+  font-family: var(--wc-serif);
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--wc-plum);
+  text-decoration: none;
+}
+
+.demoTag {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.navLinks {
+  display: flex;
+  gap: 26px;
+}
+
+.navLinks a {
+  color: var(--wc-plum);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+}
+
+.navLinks a:hover {
+  border-bottom-color: var(--wc-mustard);
+}
+
+@media (max-width: 560px) {
+  .navLinks {
+    display: none;
+  }
+}
+
+/* ---- hero: big empty sky up top, cloud banks below ---------------------- */
+
+.hero {
+  position: relative;
+  text-align: center;
+  padding: 40px 24px 0;
+  min-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sunMark {
+  width: min(240px, 56vw);
+  height: auto;
+  margin-bottom: 28px;
+}
+
+.kicker {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 7px 16px;
+  border: 2.5px solid var(--wc-plum);
+  border-radius: 999px;
+  background: var(--wc-cream);
+}
+
+.headline {
+  font-family: var(--wc-serif);
+  font-weight: 800;
+  font-size: clamp(38px, 6vw, 70px);
+  line-height: 1.06;
+  margin: 22px auto 0;
+  max-width: 15ch;
+}
+
+.subhead {
+  max-width: 52ch;
+  margin: 20px auto 0;
+  font-size: 17px;
+}
+
+.ctaRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 34px;
+  margin-bottom: 48px;
+}
+
+.ctaPrimary,
+.ctaSecondary {
+  position: relative;
+  display: inline-block;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: 14px 28px;
+  border: 2.5px solid var(--wc-plum);
+  border-radius: 12px;
+  color: var(--wc-plum);
+}
+
+.ctaPrimary {
+  background: var(--wc-mustard);
+}
+
+.ctaSecondary {
+  background: var(--wc-cream);
+}
+
+/* solid print-block offset (registration slip), not a blurred shadow */
+.ctaPrimary::after,
+.ctaSecondary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translate(5px, 6px);
+  border-radius: 12px;
+  background: var(--wc-sage);
+  z-index: -1;
+}
+
+.ctaPrimary:hover,
+.ctaSecondary:hover {
+  transform: translate(2px, 2px);
+}
+
+/* ---- cloud banks --------------------------------------------------------- */
+
+.cloudRow {
+  position: relative;
+  width: 100%;
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.cloudLeft,
+.cloudRight {
+  width: min(46vw, 560px);
+  height: auto;
+  display: block;
+  will-change: transform;
+}
+
+.cloudRight {
+  margin-left: auto;
+}
+
+/* ---- constellation divider ------------------------------------------------ */
+
+.divider {
+  display: block;
+  margin: 56px auto 0;
+  width: min(440px, 82vw);
+  height: auto;
+}
+
+/* ---- features --------------------------------------------------------------- */
+
+.features {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 72px 24px 40px;
+}
+
+.sectionTitle {
+  font-family: var(--wc-serif);
+  font-weight: 800;
+  font-size: clamp(28px, 3.6vw, 40px);
+  text-align: center;
+  margin: 0 0 52px;
+}
+
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 36px 28px;
+}
+
+@media (max-width: 860px) {
+  .featureGrid {
+    grid-template-columns: 1fr;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}
+
+.featureCard {
+  position: relative;
+  background: var(--wc-cream);
+  border: 2.5px solid var(--wc-plum);
+  border-radius: 18px;
+  padding: 34px 26px;
+  text-align: center;
+}
+
+.featureCard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  background: var(--wc-sage);
+  transform: translate(7px, 8px);
+  z-index: -1;
+}
+
+.featureCard:nth-child(1) {
+  rotate: -0.7deg;
+}
+
+.featureCard:nth-child(2) {
+  rotate: 0.5deg;
+}
+
+.featureCard:nth-child(2)::after {
+  background: var(--wc-mustard);
+}
+
+.featureCard:nth-child(3) {
+  rotate: -0.4deg;
+}
+
+.featureIcon {
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 18px;
+  display: block;
+}
+
+.featureTitle {
+  font-family: var(--wc-serif);
+  font-weight: 800;
+  font-size: 24px;
+  margin: 0 0 10px;
+}
+
+.featureBody {
+  font-size: 15px;
+  margin: 0;
+}
+
+/* ---- about --------------------------------------------------------------------- */
+
+.about {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 72px 24px;
+  text-align: center;
+}
+
+.aboutBody {
+  font-size: 17px;
+  margin: 0;
+}
+
+/* ---- footer -------------------------------------------------------------------- */
+
+.footer {
+  background: var(--wc-plum);
+  color: var(--wc-cream);
+  text-align: center;
+  padding: 44px 24px 56px;
+}
+
+.footerLine {
+  display: block;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 26px;
+}
+
+.footerLinks a {
+  color: var(--wc-mustard);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.footerLinks a:hover {
+  color: var(--wc-cream);
+}
+
+/* ---- reduced motion ---------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .ctaPrimary:hover,
+  .ctaSecondary:hover {
+    transform: none;
+  }
+}
