@@ -1,0 +1,432 @@
+/* Demo C — "The Index". Tokens scoped here; nothing global. */
+
+.page {
+  --ix-paper: #efebe4;
+  --ix-rule: #1a1a1a;
+  --ix-red: #c8442f;
+  --ix-grey: #8c8c8c;
+  --ix-hairline: rgba(26, 26, 26, 0.35);
+  --ix-didone: 'Didot', 'Bodoni MT', 'Bodoni 72', 'Georgia', serif;
+  --ix-body: 'Iowan Old Style', 'Palatino Linotype', 'Georgia', serif;
+  --ix-plate: 'Avenir Next', 'Helvetica Neue', 'Arial', sans-serif;
+  --ix-script: 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', cursive;
+
+  position: relative;
+  min-height: 100vh;
+  overflow-x: clip;
+  background: var(--ix-paper);
+  color: var(--ix-rule);
+  font-family: var(--ix-body);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.page ::selection {
+  background: var(--ix-red);
+  color: var(--ix-paper);
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+}
+
+.plateVoice {
+  font-family: var(--ix-plate);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ix-grey);
+}
+
+.script {
+  font-family: var(--ix-script);
+  color: var(--ix-red);
+}
+
+/* ---- layer 2: the hand ------------------------------------------------------ */
+
+.hand {
+  color: var(--ix-red);
+  position: absolute;
+  pointer-events: none;
+}
+
+.handDraw path {
+  stroke-dasharray: 100 200;
+  stroke-dashoffset: 100;
+  transition: stroke-dashoffset 460ms cubic-bezier(0.45, 0.05, 0.35, 1);
+}
+
+.annotated {
+  position: relative;
+}
+
+.annotated:hover .handDraw path,
+.annotated:focus-visible .handDraw path,
+.annotated:focus-within .handDraw path,
+.drawn.handDraw path,
+.drawn .handDraw path {
+  stroke-dashoffset: 0;
+}
+
+/* ---- rules ------------------------------------------------------------------- */
+
+.rule {
+  border: none;
+  border-top: 1px solid var(--ix-rule);
+  margin: 0;
+}
+
+.hairRule {
+  border: none;
+  border-top: 1px solid var(--ix-hairline);
+  margin: 0;
+}
+
+.wrap {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* ---- masthead ------------------------------------------------------------------ */
+
+.masthead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding-top: 18px;
+  padding-bottom: 14px;
+}
+
+.mastLink {
+  font-family: var(--ix-plate);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ix-rule);
+  text-decoration: none;
+}
+
+@media (max-width: 700px) {
+  .mastSuffix {
+    display: none;
+  }
+}
+
+/* ---- the display voice: enormous, cropped off the edge --------------------------- */
+
+.displayClip {
+  overflow: hidden;
+  border-bottom: 1px solid var(--ix-rule);
+}
+
+.displayWord {
+  font-family: var(--ix-didone);
+  font-weight: 400;
+  font-size: clamp(88px, 17vw, 250px);
+  line-height: 0.94;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+  margin: 0 -0.14em -0.06em -0.02em;
+  text-transform: uppercase;
+}
+
+/* ---- hero row --------------------------------------------------------------------- */
+
+.heroRow {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+  gap: 56px;
+  padding-top: 44px;
+  padding-bottom: 64px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .heroRow {
+    grid-template-columns: 1fr;
+    gap: 44px;
+  }
+}
+
+.heroKicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ix-grey);
+}
+
+.headline {
+  font-family: var(--ix-didone);
+  font-weight: 400;
+  font-size: clamp(32px, 3.8vw, 52px);
+  line-height: 1.12;
+  margin: 18px 0 0;
+  max-width: 18ch;
+}
+
+.subhead {
+  color: var(--ix-rule);
+  opacity: 0.75;
+  max-width: 50ch;
+  margin: 18px 0 0;
+}
+
+.ctaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 40px;
+  margin-top: 38px;
+}
+
+.ctaPrimary {
+  font-family: var(--ix-plate);
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ix-red);
+  text-decoration: none;
+  padding: 10px 8px;
+}
+
+.ctaCircle {
+  inset: -8px -20px;
+  width: calc(100% + 40px);
+  height: calc(100% + 16px);
+}
+
+.ctaSecondary {
+  font-family: var(--ix-plate);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ix-rule);
+  text-decoration: none;
+  padding: 6px 2px;
+}
+
+.underMark {
+  left: -4px;
+  right: -10px;
+  bottom: -6px;
+  width: calc(100% + 14px);
+  height: 10px;
+}
+
+/* ---- the figure: duotone-screened plate --------------------------------------------- */
+
+.figure {
+  border-top: 1px solid var(--ix-rule);
+  padding-top: 12px;
+}
+
+.figPlate {
+  position: relative;
+  margin: 14px 0 12px;
+}
+
+.figPlate svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.figBurst {
+  position: absolute;
+  inset: 0;
+  color: var(--ix-red);
+}
+
+.spinSlow {
+  animation: ixSpin 160s linear infinite;
+}
+
+@keyframes ixSpin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+.figCaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* ---- the index (accordion) ------------------------------------------------------------ */
+
+.indexHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 12px 0 8px;
+}
+
+.entry {
+  border-top: 1px solid var(--ix-rule);
+}
+
+.entryBtn {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 20px;
+  text-align: left;
+  padding: 22px 0;
+  cursor: pointer;
+}
+
+@media (max-width: 620px) {
+  .entryBtn {
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+}
+
+.entryNo {
+  font-family: var(--ix-plate);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: var(--ix-grey);
+}
+
+.entryTitle {
+  font-family: var(--ix-didone);
+  font-weight: 400;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.1;
+}
+
+.entryMeta {
+  font-family: var(--ix-plate);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ix-grey);
+}
+
+.entryTick {
+  left: -34px;
+  top: 26px;
+  width: 22px;
+  height: auto;
+}
+
+@media (max-width: 1240px) {
+  .entryTick {
+    left: auto;
+    right: -6px;
+    top: 12px;
+  }
+}
+
+.entryBody {
+  position: relative;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 56ch);
+  gap: 20px;
+  padding: 0 0 30px;
+}
+
+@media (max-width: 620px) {
+  .entryBody {
+    grid-template-columns: 1fr;
+    padding-left: 0;
+  }
+}
+
+.entryArrow {
+  width: 46px;
+  height: auto;
+  justify-self: end;
+  rotate: 32deg;
+  color: var(--ix-red);
+}
+
+/* marks that mount with their content draw themselves once, at hand speed */
+.drawOnMount path {
+  stroke-dasharray: 100 200;
+  animation: ixDraw 480ms cubic-bezier(0.45, 0.05, 0.35, 1) both;
+}
+
+@keyframes ixDraw {
+  from {
+    stroke-dashoffset: 100;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.entryText {
+  margin: 0;
+  opacity: 0.8;
+}
+
+/* ---- footer -------------------------------------------------------------------------------- */
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px 40px;
+  padding-top: 30px;
+  padding-bottom: 60px;
+}
+
+.footerLine {
+  font-family: var(--ix-plate);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ix-grey);
+}
+
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 26px;
+}
+
+.footerLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--ix-plate);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ix-rule);
+  text-decoration: none;
+}
+
+.footerLink:hover {
+  color: var(--ix-red);
+}
+
+/* ---- reduced motion ---------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .spinSlow {
+    animation: none;
+  }
+
+  .handDraw path {
+    transition: none;
+  }
+
+  .drawOnMount path {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

@@ -1,43 +1,49 @@
 /**
- * /demos — index of the three celestial design-language demos.
+ * /demos — index of the design-language demos.
  * Deliberately neutral styling so it doesn't bias the comparison.
  */
 import s from './index.module.css'
 
-const demos = [
+const round2 = [
   {
-    href: '/demos/a-engraved',
-    title: 'A · Engraved Atlas',
-    desc: 'Monochrome antique star chart — hairline white engraving on near-black, with topographic contour clouds as a corner vignette.',
-    swatches: ['#0a0a0c', '#ffffff', '#8b93a3'],
+    href: '/demos/a-plate',
+    title: 'A · The Plate',
+    desc: 'Strict monochrome engraving on near-black — hierarchy from line weight alone, with the red hand layer as the only fast, interactive ink.',
+    swatches: ['#0f1220', '#f2f0ea', '#c0392b', '#c9a227'],
   },
   {
-    href: '/demos/b-woodcut',
-    title: 'B · Woodcut Sky',
-    desc: 'Sage linocut print in light mode — bold plum outlines, slipped sage registration, mustard stars in banked clouds under a big empty sky.',
-    swatches: ['#f7f1e8', '#8faf9b', '#f0c04a', '#3a2a33'],
+    href: '/demos/b-nouveau',
+    title: 'B · Nouveau',
+    desc: 'Warm oatmeal and wine — a mirrored whiplash damask over the hero, circular medallion cards, copperplate script, rose-pompadour annotations.',
+    swatches: ['#ede4dc', '#722d37', '#6e7a4f', '#d87b93'],
   },
   {
-    href: '/demos/c-gilded',
-    title: 'C · Gilded Reliquary',
-    desc: 'Lapis and aged gold leaf — the hero framed in an ornate arched window, with the arch carried through every section.',
-    swatches: ['#101c3d', '#1e3268', '#c9a227', '#ede6d6'],
+    href: '/demos/c-index',
+    title: 'C · The Index',
+    desc: 'Museum catalogue in cream and one red — a cropped Didone masthead and an accordion index; opening an entry is answered by a drawn tick and arrow.',
+    swatches: ['#efebe4', '#1a1a1a', '#c8442f', '#8c8c8c'],
   },
+]
+
+const round1 = [
+  { href: '/demos/a-engraved', label: 'a-engraved' },
+  { href: '/demos/b-woodcut', label: 'b-woodcut' },
+  { href: '/demos/c-gilded', label: 'c-gilded' },
 ]
 
 export default function DemosIndex() {
   return (
     <div className={s.page}>
       <div className={s.inner}>
-        <span className={s.kicker}>Constellation · design direction</span>
-        <h1 className={s.title}>Three skies, one language</h1>
+        <span className={s.kicker}>Constellation · the annotated plate</span>
+        <h1 className={s.title}>One plate, three impressions</h1>
         <p className={s.lede}>
-          The same landing page — hero, three features, about, footer — rendered three ways.
-          Shared DNA: a compass-rose starburst in concentric rings, constellation dividers,
-          circular framing, texture over gloss, and slow orbital motion.
+          The same landing page rendered three ways under one governing idea: a printed
+          engraving (Layer 1, fixed and formal) that someone has written on (Layer 2, the
+          hand — every interaction is an annotation in the second ink).
         </p>
         <div className={s.list}>
-          {demos.map((d) => (
+          {round2.map((d) => (
             <a className={s.card} key={d.href} href={d.href}>
               <span className={s.swatches}>
                 {d.swatches.map((c) => (
@@ -52,6 +58,17 @@ export default function DemosIndex() {
             </a>
           ))}
         </div>
+        <p className={s.lede} style={{ margin: '40px 0 10px' }}>
+          Round one (celestial design language, superseded):{' '}
+          {round1.map((d, i) => (
+            <span key={d.href}>
+              {i > 0 && ' · '}
+              <a href={d.href} style={{ color: 'inherit' }}>
+                {d.label}
+              </a>
+            </span>
+          ))}
+        </p>
         <a className={s.back} href="/">
           ← back to the app
         </a>

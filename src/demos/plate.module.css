@@ -1,0 +1,495 @@
+/* Demo A — "The Plate". Tokens scoped here; nothing global. */
+
+.page {
+  --pl-ground: #0f1220;
+  --pl-ink: #f2f0ea;
+  --pl-mute: #6e7185;
+  --pl-hand: #c0392b;
+  --pl-gold: #c9a227;
+  --pl-rule: rgba(242, 240, 234, 0.22);
+  --pl-didone: 'Didot', 'Bodoni MT', 'Bodoni 72', 'Georgia', serif;
+  --pl-body: 'Iowan Old Style', 'Palatino Linotype', 'Georgia', serif;
+  --pl-plate: 'Avenir Next', 'Helvetica Neue', 'Arial', sans-serif;
+  --pl-script: 'Bradley Hand', 'Segoe Print', 'Comic Sans MS', cursive;
+
+  position: relative;
+  min-height: 100vh;
+  overflow-x: clip;
+  background: var(--pl-ground);
+  color: var(--pl-ink);
+  font-family: var(--pl-body);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.page ::selection {
+  background: var(--pl-hand);
+  color: var(--pl-ink);
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- voices ------------------------------------------------------------ */
+
+.plateVoice {
+  font-family: var(--pl-plate);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--pl-mute);
+}
+
+.script {
+  font-family: var(--pl-script);
+  color: var(--pl-hand);
+}
+
+/* ---- layer 2: the hand ------------------------------------------------- */
+
+.hand {
+  color: var(--pl-hand);
+  position: absolute;
+  pointer-events: none;
+}
+
+/* hover-drawn marks start invisible and draw at handwriting speed */
+.handDraw path {
+  stroke-dasharray: 100 200;
+  stroke-dashoffset: 100;
+  transition: stroke-dashoffset 460ms cubic-bezier(0.45, 0.05, 0.35, 1);
+}
+
+.annotated {
+  position: relative;
+}
+
+.annotated:hover .handDraw path,
+.annotated:focus-visible .handDraw path,
+.annotated:focus-within .handDraw path {
+  stroke-dashoffset: 0;
+}
+
+/* ---- fixed layers -------------------------------------------------------- */
+
+.vignette {
+  position: fixed;
+  pointer-events: none;
+  color: var(--pl-mute);
+  opacity: 0.4;
+  z-index: 0;
+  width: min(40vw, 430px);
+  height: auto;
+}
+
+/* ---- structural rules ------------------------------------------------------ */
+
+.rule {
+  border: none;
+  border-top: 1px solid var(--pl-rule);
+  margin: 0;
+}
+
+.sectionHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 14px 24px 44px;
+}
+
+/* ---- header ------------------------------------------------------------------ */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 22px 24px;
+}
+
+.brand {
+  font-family: var(--pl-plate);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--pl-ink);
+  text-decoration: none;
+}
+
+.navLinks {
+  display: flex;
+  gap: 34px;
+}
+
+.navItem {
+  font-family: var(--pl-plate);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--pl-mute);
+  text-decoration: none;
+}
+
+.navItem:hover,
+.navItem:focus-visible {
+  color: var(--pl-ink);
+}
+
+.navCircle {
+  inset: -9px -16px;
+  width: calc(100% + 32px);
+  height: calc(100% + 18px);
+}
+
+@media (max-width: 620px) {
+  .navLinks {
+    display: none;
+  }
+}
+
+/* ---- hero ---------------------------------------------------------------------- */
+
+.hero {
+  position: relative;
+  text-align: center;
+  padding: 56px 24px 96px;
+}
+
+.starfield {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  color: var(--pl-ink);
+}
+
+.heroMark {
+  position: relative;
+  width: min(430px, 84vw);
+  margin: 0 auto 52px;
+}
+
+.heroMark > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.heroLayer {
+  position: absolute;
+  inset: 0;
+}
+
+.spinSlow {
+  animation: plSpin 140s linear infinite;
+}
+
+.spinSlower {
+  animation: plSpin 220s linear infinite reverse;
+}
+
+@keyframes plSpin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+.twinkle {
+  animation: plTwinkle 5s ease-in-out infinite;
+}
+
+@keyframes plTwinkle {
+  0%,
+  100% {
+    opacity: var(--tw-hi, 0.8);
+  }
+  50% {
+    opacity: var(--tw-lo, 0.15);
+  }
+}
+
+.headline {
+  font-family: var(--pl-didone);
+  font-weight: 400;
+  font-size: clamp(42px, 6.6vw, 88px);
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  margin: 0 auto;
+  max-width: 15ch;
+}
+
+.subhead {
+  color: var(--pl-mute);
+  max-width: 52ch;
+  margin: 24px auto 0;
+}
+
+.ctaRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+  margin-top: 52px;
+}
+
+.ctaPrimary {
+  font-family: var(--pl-plate);
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--pl-ink);
+  text-decoration: none;
+  padding: 10px 8px;
+}
+
+.ctaCircle {
+  inset: -8px -20px;
+  width: calc(100% + 40px);
+  height: calc(100% + 16px);
+}
+
+.ctaNote {
+  position: absolute;
+  right: calc(100% + 12px);
+  top: -26px;
+  white-space: nowrap;
+  font-size: 17px;
+  rotate: -5deg;
+}
+
+.ctaArrow {
+  position: absolute;
+  right: calc(100% + 4px);
+  top: -8px;
+  width: 52px;
+  height: auto;
+  rotate: 14deg;
+}
+
+@media (max-width: 700px) {
+  .ctaNote,
+  .ctaArrow {
+    display: none;
+  }
+
+  .sectionHead > span + span {
+    display: none;
+  }
+}
+
+.ctaSecondary {
+  font-family: var(--pl-plate);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--pl-mute);
+  text-decoration: none;
+  padding: 6px 2px;
+}
+
+.ctaSecondary:hover {
+  color: var(--pl-ink);
+}
+
+.underMark {
+  left: -4px;
+  right: -10px;
+  bottom: -6px;
+  width: calc(100% + 14px);
+  height: 10px;
+}
+
+/* ---- divider ------------------------------------------------------------------- */
+
+.divider {
+  display: block;
+  margin: 0 auto;
+  width: min(440px, 80vw);
+  height: auto;
+  color: var(--pl-ink);
+  opacity: 0.85;
+}
+
+/* ---- features --------------------------------------------------------------------- */
+
+.features {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px 88px;
+}
+
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.featureCol {
+  padding: 8px 36px 8px 0;
+}
+
+.featureCol + .featureCol {
+  border-left: 1px solid var(--pl-rule);
+  padding-left: 36px;
+}
+
+@media (max-width: 860px) {
+  .featureGrid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .featureCol + .featureCol {
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid var(--pl-rule);
+    padding-top: 40px;
+  }
+}
+
+.featureNo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--pl-mute);
+}
+
+.featureTitle {
+  font-family: var(--pl-didone);
+  font-weight: 400;
+  font-size: 27px;
+  margin: 16px 0 12px;
+  display: inline-block;
+}
+
+.featureBody {
+  color: var(--pl-mute);
+  font-size: 15px;
+  margin: 0;
+}
+
+/* ---- about ----------------------------------------------------------------------------- */
+
+.about {
+  position: relative;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 24px 96px;
+  text-align: center;
+}
+
+.aboutTitle {
+  font-family: var(--pl-didone);
+  font-weight: 400;
+  font-size: clamp(30px, 4vw, 46px);
+  margin: 0 0 20px;
+}
+
+.aboutBody {
+  color: var(--pl-mute);
+  margin: 0;
+}
+
+.circled {
+  position: relative;
+  color: var(--pl-ink);
+  padding: 0 3px;
+}
+
+.circledMark {
+  inset: -6px -8px;
+  width: calc(100% + 16px);
+  height: calc(100% + 12px);
+}
+
+.marginNote {
+  position: absolute;
+  right: -150px;
+  top: 46%;
+  width: 130px;
+  font-size: 18px;
+  line-height: 1.3;
+  rotate: -6deg;
+  text-align: left;
+}
+
+.marginArrow {
+  position: absolute;
+  right: -46px;
+  top: 52%;
+  width: 44px;
+  height: auto;
+  rotate: 176deg;
+}
+
+@media (max-width: 1080px) {
+  .marginNote,
+  .marginArrow {
+    display: none;
+  }
+}
+
+/* ---- footer -------------------------------------------------------------------------------- */
+
+.footer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 36px 24px 64px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px 40px;
+}
+
+.footerLine {
+  font-family: var(--pl-plate);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--pl-mute);
+}
+
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 26px;
+}
+
+.footerLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--pl-plate);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--pl-mute);
+  text-decoration: none;
+}
+
+.footerLink:hover {
+  color: var(--pl-ink);
+}
+
+/* ---- reduced motion ---------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .spinSlow,
+  .spinSlower,
+  .twinkle {
+    animation: none;
+  }
+
+  .handDraw path {
+    transition: none;
+  }
+}

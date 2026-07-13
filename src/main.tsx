@@ -12,6 +12,9 @@ const DemosIndex = React.lazy(() => import('./demos/DemosIndex'))
 const EngravedAtlas = React.lazy(() => import('./demos/EngravedAtlas'))
 const WoodcutSky = React.lazy(() => import('./demos/WoodcutSky'))
 const GildedReliquary = React.lazy(() => import('./demos/GildedReliquary'))
+const APlate = React.lazy(() => import('./demos/APlate'))
+const BNouveau = React.lazy(() => import('./demos/BNouveau'))
+const CIndex = React.lazy(() => import('./demos/CIndex'))
 
 const path = window.location.pathname.replace(/\/+$/, '') || '/'
 
@@ -20,6 +23,9 @@ const demoRoutes: Record<string, React.ComponentType> = {
   '/demos/a-engraved': EngravedAtlas,
   '/demos/b-woodcut': WoodcutSky,
   '/demos/c-gilded': GildedReliquary,
+  '/demos/a-plate': APlate,
+  '/demos/b-nouveau': BNouveau,
+  '/demos/c-index': CIndex,
 }
 
 const Demo = demoRoutes[path]
