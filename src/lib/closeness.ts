@@ -1,5 +1,6 @@
-import type { ActionLog, AppState, Person, Ring } from '../types'
+import type { ActionLog, AppState, Person, Reminder, Ring } from '../types'
 import { RING_NAMES, TRANSITIONAL_RINGS } from '../types'
+import { daysFromToday, relativeDay } from './dates'
 
 // The signal layer (§10.2): computed, always explainable.
 // Rules of the house: the app notices, the user decides (§2.7c).
@@ -243,6 +244,13 @@ export interface WeeklySuggestion {
   reason: string
 }
 
+/** Reminders that deserve attention now: overdue, due, or coming up within the horizon. */
+export function dueReminders(state: AppState, horizonDays = 7, now = Date.now()): Reminder[] {
+  return state.reminders
+    .filter((r) => !r.done && daysFromToday(r.date, now) <= horizonDays)
+    .sort((a, b) => a.date.localeCompare(b.date))
+}
+
 /** Days until the next occurrence of an MM-DD date. */
 export function daysUntilDate(mmdd: string, now = Date.now()): number {
   const [m, d] = mmdd.split('-').map(Number)
@@ -260,9 +268,19 @@ export function weeklySuggestions(state: AppState, now = Date.now()): WeeklySugg
   const out: WeeklySuggestion[] = []
   const used = new Set<string>()
 
-  // 0. People you flagged yourself come first — you already decided they matter.
+  // 0a. Reminders that have come due — you scheduled these for a reason.
+  for (const r of dueReminders(state, 2, now).slice(0, 2)) {
+    if (used.has(r.personId)) continue
+    out.push({
+      personId: r.personId,
+      reason: `You set a reminder (${relativeDay(r.date, now)}): “${r.note}”`,
+    })
+    used.add(r.personId)
+  }
+
+  // 0b. People you flagged yourself — you already decided they matter.
   const flagged = state.people
-    .filter((p) => p.flaggedAt)
+    .filter((p) => p.flaggedAt && !used.has(p.id))
     .sort((a, b) => (b.flaggedAt ?? 0) - (a.flaggedAt ?? 0))
   for (const p of flagged.slice(0, 2)) {
     out.push({
@@ -326,13 +344,21 @@ export function weeklySuggestions(state: AppState, now = Date.now()): WeeklySugg
 
 export interface AttentionItem {
   personId: string
-  kind: 'flagged' | 'overdue' | 'on_your_mind'
+  kind: 'reminder' | 'flagged' | 'overdue' | 'on_your_mind'
   note: string
+  reminderId?: string
 }
 
 /** Attention view (§2.6): people you flagged, overdue people, and anything
  *  waiting under "for next time" — always shown, no timing cleverness. */
 export function attentionItems(state: AppState, now = Date.now()): AttentionItem[] {
+  const reminders: AttentionItem[] = dueReminders(state, 7, now).map((r) => ({
+    personId: r.personId,
+    kind: 'reminder',
+    note: `${r.note} — ${relativeDay(r.date, now)}`,
+    reminderId: r.id,
+  }))
+  const remindedIds = new Set(reminders.map((r) => r.personId))
   const flagged: AttentionItem[] = []
   const overdue: Array<AttentionItem & { ratio: number }> = []
   const onMind: AttentionItem[] = []
@@ -375,5 +401,10 @@ export function attentionItems(state: AppState, now = Date.now()): AttentionItem
       (state.people.find((p) => p.id === a.personId)?.flaggedAt ?? 0),
   )
   overdue.sort((a, b) => b.ratio - a.ratio)
-  return [...flagged, ...overdue.map(({ ratio: _r, ...item }) => item), ...onMind]
+  return [
+    ...reminders,
+    ...flagged.filter((f) => !remindedIds.has(f.personId)),
+    ...overdue.filter((o) => !remindedIds.has(o.personId)).map(({ ratio: _r, ...item }) => item),
+    ...onMind.filter((m) => !remindedIds.has(m.personId)),
+  ]
 }

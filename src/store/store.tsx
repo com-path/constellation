@@ -5,6 +5,7 @@ import type {
   Edge,
   EventItem,
   Person,
+  Reminder,
   Ring,
   SparkStatus,
 } from '../types'
@@ -28,6 +29,9 @@ export type Action =
   | { type: 'dismiss_proposal'; key: string }
   | { type: 'add_edge'; edge: Edge }
   | { type: 'remove_edge'; a: string; b: string }
+  | { type: 'add_reminder'; reminder: Reminder }
+  | { type: 'set_reminder_done'; reminderId: string; done: boolean }
+  | { type: 'remove_reminder'; reminderId: string }
   | { type: 'reset_demo' }
   | { type: 'clear_all' }
   | { type: 'load_state'; state: AppState }
@@ -59,6 +63,7 @@ function reducer(state: AppState, action: Action): AppState {
             participants: a.participants.filter((id) => id !== action.personId),
           }))
           .filter((a) => a.participants.length > 0),
+        reminders: state.reminders.filter((r) => r.personId !== action.personId),
       }
     case 'move_ring':
       return {
@@ -116,6 +121,17 @@ function reducer(state: AppState, action: Action): AppState {
       const key = pairKey(action.a, action.b)
       return { ...state, edges: state.edges.filter((e) => pairKey(e.a, e.b) !== key) }
     }
+    case 'add_reminder':
+      return { ...state, reminders: [...state.reminders, action.reminder] }
+    case 'set_reminder_done':
+      return {
+        ...state,
+        reminders: state.reminders.map((r) =>
+          r.id === action.reminderId ? { ...r, done: action.done } : r,
+        ),
+      }
+    case 'remove_reminder':
+      return { ...state, reminders: state.reminders.filter((r) => r.id !== action.reminderId) }
     case 'dismiss_proposal':
       return {
         ...state,
@@ -127,7 +143,7 @@ function reducer(state: AppState, action: Action): AppState {
     case 'reset_demo':
       return buildSeedState()
     case 'clear_all':
-      return { people: [], edges: [], actions: [], events: [], sparkStates: [], dismissedProposals: [] }
+      return { people: [], edges: [], actions: [], events: [], sparkStates: [], dismissedProposals: [], reminders: [] }
     case 'load_state':
       // Wholesale replacement — used when a decrypted sky arrives from sync.
       return normalizeState(action.state)
@@ -160,6 +176,7 @@ function normalizeState(s: AppState): AppState {
     events: s.events ?? [],
     sparkStates: s.sparkStates ?? [],
     dismissedProposals: s.dismissedProposals ?? [],
+    reminders: s.reminders ?? [],
   }
 }
 

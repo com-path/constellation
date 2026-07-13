@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import type { Person, Ring } from '../types'
+import type { ActionLog, Person, Ring } from '../types'
 import {
   ACTION_TYPE_META,
   MODALITY_NAMES,
@@ -10,6 +10,7 @@ import {
 } from '../types'
 import { useStore } from '../store/store'
 import { actionsFor, cadenceFor, daysSinceTouch, pathInward, RING_CADENCE } from '../lib/closeness'
+import { dateInputToTs, friendshipDuration, relativeDay, todayInput } from '../lib/dates'
 import { EditableList, fmtDateFull } from './ui'
 
 // The person page (§3): tapping a star. On desktop it opens as a broad page —
@@ -90,6 +91,23 @@ export function PersonProfile({
             <p className="muted small">
               {person.contexts.join(' · ')}
               {days > 0 ? ` · last crossed paths ${days} days ago` : ' · crossed paths today'}
+            </p>
+            <p className="muted small known-since">
+              {person.knownSince
+                ? `✦ ${friendshipDuration(person.knownSince)} of friendship · since`
+                : 'When did this friendship begin?'}{' '}
+              <input
+                type="date"
+                value={person.knownSince ?? ''}
+                max={todayInput()}
+                aria-label="Friends since"
+                onChange={(e) =>
+                  dispatch({
+                    type: 'update_person',
+                    person: { ...person, knownSince: e.target.value || undefined },
+                  })
+                }
+              />
             </p>
             {observation && <p className="observation">{observation}</p>}
           </div>
@@ -183,40 +201,11 @@ export function PersonProfile({
         </header>
 
         <div className="person-columns">
-          {/* ——— The story ——— */}
+          {/* ——— The story: reminders ahead, then the timeline back to the beginning ——— */}
           <div className="pcol">
             <h3 className="pcol-title">The story</h3>
-            <section className="psec">
-              {history.length === 0 && (
-                <p className="hint">Nothing logged yet — the story starts whenever you do.</p>
-              )}
-              <ul className="history-list">
-                {history.map((a) => (
-                  <li key={a.id}>
-                    <span
-                      className="type-dot"
-                      style={{ background: ACTION_TYPE_META[a.type].color }}
-                      title={ACTION_TYPE_META[a.type].name}
-                    />
-                    <div>
-                      <div className="history-note">
-                        {a.note || ACTION_TYPE_META[a.type].name}
-                      </div>
-                      <div className="muted small">
-                        {fmtDateFull(a.timestamp)} · {ACTION_TYPE_META[a.type].name} ·{' '}
-                        {MODALITY_NAMES[a.modality]}
-                        {a.participants.length > 1 &&
-                          ` · with ${a.participants
-                            .filter((id) => id !== person.id)
-                            .map((id) => state.people.find((p) => p.id === id)?.name)
-                            .filter(Boolean)
-                            .join(', ')}`}
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </section>
+            <ComingUp person={person} />
+            <Timeline person={person} history={history} />
           </div>
 
           {/* ——— The texture ——— */}
@@ -390,6 +379,148 @@ export function PersonProfile({
         </div>
       </aside>
     </div>
+  )
+}
+
+/** Scheduled check-ins for this person — "she's back from the trip in a month". */
+function ComingUp({ person }: { person: Person }) {
+  const { state, dispatch } = useStore()
+  const [date, setDate] = useState('')
+  const [note, setNote] = useState('')
+
+  const reminders = state.reminders
+    .filter((r) => r.personId === person.id && !r.done)
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  const add = () => {
+    if (!date || !note.trim()) return
+    dispatch({
+      type: 'add_reminder',
+      reminder: { id: uid(), personId: person.id, date, note: note.trim(), done: false },
+    })
+    setDate('')
+    setNote('')
+  }
+
+  return (
+    <section className="psec">
+      <h4>Coming up</h4>
+      {reminders.length === 0 && (
+        <p className="hint">
+          Set a check-in for later — “back from the trip”, “after the interview”. It will
+          surface in Attention when the day comes.
+        </p>
+      )}
+      <ul className="dates-list">
+        {reminders.map((r) => (
+          <li key={r.id}>
+            <span>
+              {r.note}
+              <span className="muted small"> — {relativeDay(r.date)}</span>
+            </span>
+            <button
+              className="icon-btn subtle"
+              aria-label={`Remove reminder: ${r.note}`}
+              onClick={() => dispatch({ type: 'remove_reminder', reminderId: r.id })}
+            >
+              ×
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div className="add-row">
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <input
+          placeholder="Remind me to…"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && add()}
+        />
+        <button className="btn small" onClick={add} disabled={!date || !note.trim()}>
+          Add
+        </button>
+      </div>
+    </section>
+  )
+}
+
+/** The friendship in time order: moments, movements between rings, and where it began.
+ *  Log past moments via “Log a moment” — the date field goes back as far as needed. */
+function Timeline({ person, history }: { person: Person; history: ActionLog[] }) {
+  const { state } = useStore()
+
+  type Entry =
+    | { key: string; ts: number; kind: 'action'; action: ActionLog }
+    | { key: string; ts: number; kind: 'ring'; ring: Ring }
+
+  const entries: Entry[] = [
+    ...history.map((a) => ({ key: a.id, ts: a.timestamp, kind: 'action' as const, action: a })),
+    ...person.ringHistory
+      .slice(1)
+      .map((h, i) => ({ key: `ring-${i}`, ts: h.at, kind: 'ring' as const, ring: h.ring })),
+  ].sort((a, b) => b.ts - a.ts)
+
+  const beginTs = person.knownSince ? dateInputToTs(person.knownSince) : person.createdAt
+
+  return (
+    <section className="psec timeline">
+      {entries.length === 0 && (
+        <p className="hint">
+          Nothing logged yet — the story starts whenever you do. “Log a moment” accepts past
+          dates, so memories can go in retroactively.
+        </p>
+      )}
+      <ul className="history-list">
+        {entries.map((e) =>
+          e.kind === 'action' ? (
+            <li key={e.key}>
+              <span
+                className="type-dot"
+                style={{ background: ACTION_TYPE_META[e.action.type].color }}
+                title={ACTION_TYPE_META[e.action.type].name}
+              />
+              <div>
+                <div className="history-note">
+                  {e.action.note || ACTION_TYPE_META[e.action.type].name}
+                </div>
+                <div className="muted small">
+                  {fmtDateFull(e.action.timestamp)} · {ACTION_TYPE_META[e.action.type].name} ·{' '}
+                  {MODALITY_NAMES[e.action.modality]}
+                  {e.action.participants.length > 1 &&
+                    ` · with ${e.action.participants
+                      .filter((id) => id !== person.id)
+                      .map((id) => state.people.find((p) => p.id === id)?.name)
+                      .filter(Boolean)
+                      .join(', ')}`}
+                </div>
+              </div>
+            </li>
+          ) : (
+            <li key={e.key} className="timeline-ring">
+              <span className="type-dot ring-dot" />
+              <div>
+                <div className="history-note muted">
+                  <em>Moved to {RING_NAMES[String(e.ring)]}</em>
+                </div>
+                <div className="muted small">{fmtDateFull(e.ts)}</div>
+              </div>
+            </li>
+          ),
+        )}
+        <li className="timeline-start">
+          <span className="type-dot start-dot" />
+          <div>
+            <div className="history-note">
+              <em>{person.knownSince ? 'Where it began' : 'Added to your sky'}</em>
+            </div>
+            <div className="muted small">
+              {fmtDateFull(beginTs)}
+              {person.knownSince && ` · ${friendshipDuration(person.knownSince)} ago`}
+            </div>
+          </div>
+        </li>
+      </ul>
+    </section>
   )
 }
 

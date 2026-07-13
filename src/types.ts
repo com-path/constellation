@@ -82,6 +82,19 @@ export interface Person {
   flaggedAt?: number
   /** Personal check-in rhythm in days. undefined = the ring's default; 0 = no reminders. */
   checkinDays?: number
+  /** When the friendship began (YYYY-MM-DD, approximate is fine). */
+  knownSince?: string
+}
+
+/** A time-anchored check-in the user scheduled themselves —
+ *  "she's back from the vacation in a month; remind me then." */
+export interface Reminder {
+  id: string
+  personId: string
+  /** YYYY-MM-DD — when it should surface in Attention */
+  date: string
+  note: string
+  done: boolean
 }
 
 /** Starting points for "good events for them" — free text is equally welcome. */
@@ -152,6 +165,7 @@ export interface AppState {
   events: EventItem[]
   sparkStates: SparkState[]
   dismissedProposals: DismissedProposal[]
+  reminders: Reminder[]
 }
 
 export type ViewMode = 'closeness' | 'network' | 'events' | 'attention' | 'sparks'

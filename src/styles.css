@@ -849,6 +849,34 @@ textarea.wide {
   gap: 0.8rem;
 }
 
+.known-since input[type='date'] {
+  padding: 0.1rem 0.3rem;
+  font-size: 0.78rem;
+  color: var(--ink-secondary);
+  background: transparent;
+  border-color: transparent;
+}
+
+.known-since input[type='date']:hover,
+.known-since input[type='date']:focus {
+  border-color: var(--panel-border);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.timeline-ring .ring-dot {
+  background: transparent;
+  border: 1px solid var(--gold);
+}
+
+.timeline-start .start-dot {
+  background: var(--gold);
+}
+
+.timeline-start {
+  border-top: 1px dashed var(--panel-border);
+  padding-top: 0.55rem;
+}
+
 .flag-on {
   border-color: rgba(217, 185, 108, 0.6);
   color: #ecdfba;

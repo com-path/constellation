@@ -19,11 +19,12 @@ export function AttentionPanel({
   const items = useMemo(() => attentionItems(state), [state])
   const name = (id: string) => state.people.find((p) => p.id === id)?.name ?? '?'
 
+  const reminders = items.filter((i) => i.kind === 'reminder')
   const flagged = items.filter((i) => i.kind === 'flagged')
-  const rest = items.filter((i) => i.kind !== 'flagged')
-  const flaggedIds = new Set(flagged.map((i) => i.personId))
-  // Flagged people already have their own section above — don't repeat them here.
-  const weeklyRest = weekly.filter((w) => !flaggedIds.has(w.personId))
+  const rest = items.filter((i) => i.kind !== 'flagged' && i.kind !== 'reminder')
+  const topIds = new Set([...reminders, ...flagged].map((i) => i.personId))
+  // People already shown in the sections above — don't repeat them in This week.
+  const weeklyRest = weekly.filter((w) => !topIds.has(w.personId))
 
   const clearFlag = (personId: string) => {
     const person = state.people.find((p) => p.id === personId)
@@ -32,6 +33,36 @@ export function AttentionPanel({
 
   return (
     <div className="side-panel">
+      {reminders.length > 0 && (
+        <>
+          <h3>Coming up</h3>
+          <ul className="card-list">
+            {reminders.map((it) => (
+              <li key={it.reminderId} className="card flagged-card">
+                <button className="link" onClick={() => onSelectPerson(it.personId)}>
+                  ◷ {name(it.personId)}
+                </button>
+                <p className="reason">{it.note}</p>
+                <div className="card-actions">
+                  <button className="btn small" onClick={() => onLogWith(it.personId)}>
+                    I reached out
+                  </button>
+                  <button
+                    className="btn small ghost"
+                    onClick={() =>
+                      it.reminderId &&
+                      dispatch({ type: 'set_reminder_done', reminderId: it.reminderId, done: true })
+                    }
+                  >
+                    Done
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
       {flagged.length > 0 && (
         <>
           <h3>Flagged by you</h3>
@@ -93,8 +124,9 @@ export function AttentionPanel({
       </ul>
 
       <p className="hint">
-        To pin someone here yourself, open their star and press “⚑ Flag for attention”.
-        Notes under “For next time” show up here too.
+        To pin someone here yourself, open their star and press “⚑ Flag for attention” — or
+        schedule a dated check-in under “Coming up” on their page (“back from the trip”,
+        “after the interview”). Notes under “For next time” show up here too.
       </p>
     </div>
   )

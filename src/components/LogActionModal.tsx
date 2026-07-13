@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { ActionType, Modality } from '../types'
 import { ACTION_TYPE_META, ACTION_TYPE_ORDER, MODALITY_NAMES, uid } from '../types'
 import { useStore } from '../store/store'
+import { dateInputToTs, todayInput } from '../lib/dates'
 import { Modal } from './ui'
 
 // Feather-light logging (§8.2a): two seconds, not two minutes.
@@ -21,6 +22,7 @@ export function LogActionModal({
   const [type, setType] = useState<ActionType>('everyday')
   const [modality, setModality] = useState<Modality>('message')
   const [note, setNote] = useState('')
+  const [date, setDate] = useState(todayInput())
 
   const toggle = (id: string) =>
     setParticipants((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]))
@@ -33,7 +35,8 @@ export function LogActionModal({
         type,
         modality,
         participants,
-        timestamp: Date.now(),
+        // Backdating is first-class: "we met up a few weeks ago" belongs on that day.
+        timestamp: date === todayInput() ? Date.now() : dateInputToTs(date),
         note: note.trim(),
       },
     })
@@ -84,6 +87,14 @@ export function LogActionModal({
           </button>
         ))}
       </div>
+
+      <h4>When?</h4>
+      <input
+        type="date"
+        value={date}
+        max={todayInput()}
+        onChange={(e) => setDate(e.target.value)}
+      />
 
       <h4>A line for the story (optional)</h4>
       <input

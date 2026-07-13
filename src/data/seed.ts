@@ -23,6 +23,13 @@ interface PersonSeed {
   details?: Partial<Person['details']>
   flaggedDaysAgo?: number
   checkinDays?: number
+  knownSinceDaysAgo?: number
+}
+
+function dateStr(offsetDays: number): string {
+  const d = new Date(now + offsetDays * DAY)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
 const emptyDetails = (): Person['details'] => ({
@@ -53,6 +60,7 @@ function makePerson(seed: PersonSeed, ageDays: number): Person {
     createdAt: daysAgo(ageDays),
     flaggedAt: seed.flaggedDaysAgo != null ? daysAgo(seed.flaggedDaysAgo) : undefined,
     checkinDays: seed.checkinDays,
+    knownSince: seed.knownSinceDaysAgo != null ? dateStr(-seed.knownSinceDaysAgo) : undefined,
   }
 }
 
@@ -63,6 +71,7 @@ const peopleSeeds: PersonSeed[] = [
     name: 'Amara',
     contexts: ['University'],
     ring: 1,
+    knownSinceDaysAgo: 365 * 16,
     howMet: 'Shared a terrible flat in second year of university',
     location: 'Same city',
     occupation: 'Editor, slowly writing her own novel',
@@ -87,6 +96,7 @@ const peopleSeeds: PersonSeed[] = [
     name: 'Ben',
     contexts: ['Childhood'],
     ring: 1,
+    knownSinceDaysAgo: 365 * 30,
     howMet: 'Grew up three doors down; friends since age seven',
     location: 'Two hours away',
     occupation: 'Carpenter',
@@ -151,6 +161,7 @@ const peopleSeeds: PersonSeed[] = [
     contexts: ['Neighbourhood'],
     ring: 2,
     flaggedDaysAgo: 2,
+    knownSinceDaysAgo: 240,
     howMet: 'Neighbour; bonded over a burst pipe that flooded both flats',
     location: 'Same street',
     occupation: 'Chef',
@@ -345,6 +356,7 @@ const peopleSeeds: PersonSeed[] = [
     name: 'Felix',
     contexts: ['Climbing Gym'],
     ring: 4,
+    knownSinceDaysAgo: 90,
     howMet: 'New to the Tuesday crew; moved to the city in spring',
     occupation: 'Illustrator',
     details: {
@@ -565,5 +577,21 @@ export function buildSeedState(): AppState {
       { pairKey: ['priya', 'sofia'].sort().join('|'), status: 'landed', at: daysAgo(21) },
     ],
     dismissedProposals: [],
+    reminders: [
+      {
+        id: uid(),
+        personId: 'joao',
+        date: dateStr(18),
+        note: 'Back from the Azores fieldwork — ask how it went',
+        done: false,
+      },
+      {
+        id: uid(),
+        personId: 'grace',
+        date: dateStr(2),
+        note: 'Her mum’s follow-up appointment is this week — check in',
+        done: false,
+      },
+    ],
   }
 }
