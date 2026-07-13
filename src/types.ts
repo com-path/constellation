@@ -76,6 +76,9 @@ export interface Person {
   }
   ringHistory: RingChange[]
   createdAt: number
+  /** Set by the user: "I want to check in with them soon." Sits at the top of the
+   *  Attention view until cleared — or auto-cleared by logging a moment with them. */
+  flaggedAt?: number
 }
 
 /** Person ↔ Person thread. Fixed history — it doesn't change with closeness. */

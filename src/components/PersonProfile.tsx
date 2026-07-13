@@ -114,7 +114,29 @@ export function PersonProfile({
           <button className="btn ghost" onClick={onQuickNote}>
             Quick note
           </button>
+          <button
+            className={`btn ghost ${person.flaggedAt ? 'flag-on' : ''}`}
+            title={
+              person.flaggedAt
+                ? 'Flagged for attention — click to clear'
+                : 'Pin them to the Attention view until you next reach out'
+            }
+            onClick={() =>
+              dispatch({
+                type: 'update_person',
+                person: { ...person, flaggedAt: person.flaggedAt ? undefined : Date.now() },
+              })
+            }
+          >
+            {person.flaggedAt ? '⚑ Flagged' : '⚑ Flag for attention'}
+          </button>
         </div>
+        {person.flaggedAt != null && (
+          <p className="hint">
+            {person.name} will sit at the top of the Attention view until you log a moment
+            with them, or clear the flag.
+          </p>
+        )}
       </div>
 
       <div className="profile-sections">

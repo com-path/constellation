@@ -252,6 +252,20 @@ export function weeklySuggestions(state: AppState, now = Date.now()): WeeklySugg
   const out: WeeklySuggestion[] = []
   const used = new Set<string>()
 
+  // 0. People you flagged yourself come first — you already decided they matter.
+  const flagged = state.people
+    .filter((p) => p.flaggedAt)
+    .sort((a, b) => (b.flaggedAt ?? 0) - (a.flaggedAt ?? 0))
+  for (const p of flagged.slice(0, 2)) {
+    out.push({
+      personId: p.id,
+      reason: p.details.toDiscuss[0]
+        ? `You flagged ${p.name} — “${p.details.toDiscuss[0]}”`
+        : `You flagged ${p.name} for a check-in.`,
+    })
+    used.add(p.id)
+  }
+
   // 1. An important date coming up — especially the hard ones (§3.1e).
   const dated = state.people
     .flatMap((p) =>
@@ -304,30 +318,52 @@ export function weeklySuggestions(state: AppState, now = Date.now()): WeeklySugg
 
 export interface AttentionItem {
   personId: string
-  kind: 'overdue' | 'on_your_mind'
+  kind: 'flagged' | 'overdue' | 'on_your_mind'
   note: string
 }
 
-/** Attention view (§2.6): overdue and drifting people, plus thought-about-but-not-contacted. */
+/** Attention view (§2.6): people you flagged, overdue people, and anything
+ *  waiting under "for next time" — always shown, no timing cleverness. */
 export function attentionItems(state: AppState, now = Date.now()): AttentionItem[] {
-  const items: AttentionItem[] = []
+  const flagged: AttentionItem[] = []
+  const overdue: Array<AttentionItem & { ratio: number }> = []
+  const onMind: AttentionItem[] = []
   for (const p of state.people) {
-    if (p.ring === 'outer') continue
     const ratio = overdueRatio(state.actions, p, now)
     const days = daysSinceTouch(state.actions, p, now)
-    if (ratio > 1) {
-      items.push({
+    const firstNote = p.details.toDiscuss[0]
+    if (p.flaggedAt) {
+      flagged.push({
+        personId: p.id,
+        kind: 'flagged',
+        note: firstNote ? `“${firstNote}”` : 'You flagged them for a check-in',
+      })
+      continue
+    }
+    if (ratio > 1 && p.ring !== 'outer') {
+      overdue.push({
         personId: p.id,
         kind: 'overdue',
-        note: `${days} days since you crossed paths`,
+        note:
+          `${days} days since you crossed paths` +
+          (firstNote ? ` · “${firstNote}”` : ''),
+        ratio,
       })
-    } else if (p.details.toDiscuss.length > 0 && days > 10) {
-      items.push({
+      continue
+    }
+    if (p.details.toDiscuss.length > 0) {
+      onMind.push({
         personId: p.id,
         kind: 'on_your_mind',
-        note: `On your mind: “${p.details.toDiscuss[0]}”`,
+        note: `“${firstNote}”`,
       })
     }
   }
-  return items.sort((a, b) => (a.kind === 'overdue' ? 0 : 1) - (b.kind === 'overdue' ? 0 : 1))
+  flagged.sort(
+    (a, b) =>
+      (state.people.find((p) => p.id === b.personId)?.flaggedAt ?? 0) -
+      (state.people.find((p) => p.id === a.personId)?.flaggedAt ?? 0),
+  )
+  overdue.sort((a, b) => b.ratio - a.ratio)
+  return [...flagged, ...overdue.map(({ ratio: _r, ...item }) => item), ...onMind]
 }

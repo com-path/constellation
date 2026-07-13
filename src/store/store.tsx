@@ -74,7 +74,16 @@ function reducer(state: AppState, action: Action): AppState {
         ),
       }
     case 'log_action':
-      return { ...state, actions: [...state.actions, action.action] }
+      return {
+        ...state,
+        actions: [...state.actions, action.action],
+        // Reaching out answers the flag — clear it for everyone involved.
+        people: state.people.map((p) =>
+          p.flaggedAt && action.action.participants.includes(p.id)
+            ? { ...p, flaggedAt: undefined }
+            : p,
+        ),
+      }
     case 'add_event':
       return { ...state, events: [...state.events, action.event] }
     case 'remove_event':

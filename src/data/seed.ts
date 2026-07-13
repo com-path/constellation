@@ -21,6 +21,7 @@ interface PersonSeed {
   location?: string
   occupation?: string
   details?: Partial<Person['details']>
+  flaggedDaysAgo?: number
 }
 
 const emptyDetails = (): Person['details'] => ({
@@ -48,6 +49,7 @@ function makePerson(seed: PersonSeed, ageDays: number): Person {
     details: { ...emptyDetails(), ...seed.details },
     ringHistory: [{ ring: seed.ring, at: daysAgo(ageDays) }],
     createdAt: daysAgo(ageDays),
+    flaggedAt: seed.flaggedDaysAgo != null ? daysAgo(seed.flaggedDaysAgo) : undefined,
   }
 }
 
@@ -144,6 +146,7 @@ const peopleSeeds: PersonSeed[] = [
     name: 'Marco',
     contexts: ['Neighbourhood'],
     ring: 2,
+    flaggedDaysAgo: 2,
     howMet: 'Neighbour; bonded over a burst pipe that flooded both flats',
     location: 'Same street',
     occupation: 'Chef',
