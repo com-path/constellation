@@ -45,6 +45,8 @@ interface Emphasis {
 
 const EMPHASIS: Record<ViewMode, Emphasis> = {
   closeness: { ringAlpha: 0.55, edgeAlpha: 0.1, nebulaAlpha: 0.05, labelAlpha: 0.45 },
+  // The catalogue replaces the canvas entirely; this entry only satisfies the lens map.
+  catalogue: { ringAlpha: 0.55, edgeAlpha: 0.1, nebulaAlpha: 0.05, labelAlpha: 0.45 },
   network: { ringAlpha: 0.14, edgeAlpha: 0.55, nebulaAlpha: 0.16, labelAlpha: 0.55 },
   events: { ringAlpha: 0.3, edgeAlpha: 0.12, nebulaAlpha: 0.04, labelAlpha: 0.5 },
   attention: { ringAlpha: 0.35, edgeAlpha: 0.08, nebulaAlpha: 0.04, labelAlpha: 0.5 },

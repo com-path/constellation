@@ -168,7 +168,7 @@ export interface AppState {
   reminders: Reminder[]
 }
 
-export type ViewMode = 'closeness' | 'network' | 'events' | 'attention' | 'sparks'
+export type ViewMode = 'closeness' | 'network' | 'events' | 'attention' | 'sparks' | 'catalogue'
 
 export const ACTION_TYPE_META: Record<
   ActionType,

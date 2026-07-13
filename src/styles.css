@@ -998,6 +998,94 @@ textarea.wide {
   border-radius: 0 7px 7px 0;
 }
 
+/* ——— Catalogue ——— */
+.catalogue {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0.9rem 1.15rem;
+  gap: 0.7rem;
+}
+
+.catalogue-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.catalogue-search {
+  min-width: 16rem;
+}
+
+.catalogue-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  background: rgba(13, 18, 38, 0.55);
+}
+
+.catalogue-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.catalogue-table th {
+  position: sticky;
+  top: 0;
+  background: #10162e;
+  text-align: left;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-secondary);
+  border-bottom: 1px solid var(--panel-border);
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.th-sort {
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  padding: 0;
+}
+
+.th-sort:hover {
+  color: var(--ink);
+}
+
+.sort-arrow {
+  margin-left: 0.3rem;
+  color: var(--gold);
+  font-size: 0.6rem;
+}
+
+.catalogue-table td {
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid rgba(120, 140, 190, 0.09);
+  white-space: nowrap;
+}
+
+.catalogue-table tbody tr {
+  cursor: pointer;
+}
+
+.catalogue-table tbody tr:hover {
+  background: rgba(217, 185, 108, 0.06);
+}
+
+.cat-name {
+  color: #ecdfba;
+  font-weight: 600;
+}
+
 /* ——— Text utilities ——— */
 .muted {
   color: var(--ink-muted);

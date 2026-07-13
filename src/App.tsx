@@ -5,6 +5,7 @@ import { SyncProvider, useSync } from './sync/SyncContext'
 import { AccountPanel, SyncStatusButton } from './components/AccountPanel'
 import { Tour, TOUR_DONE_KEY } from './components/Tour'
 import { GettingStarted } from './components/GettingStarted'
+import { CatalogueView } from './components/CatalogueView'
 import { ConstellationCanvas } from './graph/ConstellationCanvas'
 import type { GraphInput } from './graph/simulation'
 import { activeProposals, attentionItems, bondStrength, capacityNote, weeklySuggestions } from './lib/closeness'
@@ -26,6 +27,7 @@ const VIEWS: Array<{ id: ViewMode; label: string; hint: string }> = [
   { id: 'events', label: 'Events', hint: 'Something’s come up — who fits?' },
   { id: 'attention', label: 'Attention', hint: 'Who’s been on your mind' },
   { id: 'sparks', label: 'Sparks', hint: 'Introductions waiting to happen' },
+  { id: 'catalogue', label: 'Catalogue', hint: 'Every star in rows — search, sort, filter' },
 ]
 
 function AppInner() {
@@ -159,15 +161,19 @@ function AppInner() {
       )}
 
       <main className="stage">
-        <ConstellationCanvas
-          input={graphInput}
-          people={state.people}
-          viewMode={view}
-          selectedId={selectedId}
-          highlightIds={highlightIds}
-          sparkPairs={sparkPairs}
-          onSelect={setSelectedId}
-        />
+        {view === 'catalogue' ? (
+          <CatalogueView onSelectPerson={setSelectedId} />
+        ) : (
+          <ConstellationCanvas
+            input={graphInput}
+            people={state.people}
+            viewMode={view}
+            selectedId={selectedId}
+            highlightIds={highlightIds}
+            sparkPairs={sparkPairs}
+            onSelect={setSelectedId}
+          />
+        )}
 
         {view === 'sparks' && <SparksPanel sparks={sparks} onSelectPerson={setSelectedId} />}
         {view === 'events' && (
