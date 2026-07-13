@@ -6,6 +6,7 @@ import { AccountPanel, SyncStatusButton } from './components/AccountPanel'
 import { Tour, TOUR_DONE_KEY } from './components/Tour'
 import { GettingStarted } from './components/GettingStarted'
 import { CatalogueView } from './components/CatalogueView'
+import { Landing, LANDING_DONE_KEY } from './components/Landing'
 import { ConstellationCanvas } from './graph/ConstellationCanvas'
 import type { GraphInput } from './graph/simulation'
 import { activeProposals, attentionItems, bondStrength, capacityNote, weeklySuggestions } from './lib/closeness'
@@ -53,6 +54,9 @@ function AppInner() {
   const [accountOpen, setAccountOpen] = useState(false)
   const [tourOpen, setTourOpen] = useState(
     () => localStorage.getItem(TOUR_DONE_KEY) !== 'done',
+  )
+  const [landingOpen, setLandingOpen] = useState(
+    () => localStorage.getItem(LANDING_DONE_KEY) !== 'done',
   )
 
   // A signed-in-but-locked sky needs the passphrase before sync resumes —
@@ -237,6 +241,9 @@ function AppInner() {
           <button className="link small" onClick={() => setTourOpen(true)}>
             tour
           </button>
+          <button className="link small" onClick={() => setLandingOpen(true)}>
+            about
+          </button>
           <button className="link small" onClick={() => dispatch({ type: 'reset_demo' })}>
             demo sky
           </button>
@@ -261,6 +268,14 @@ function AppInner() {
       {notePerson && <QuickNoteModal person={notePerson} onClose={() => setNoteFor(null)} />}
       {mirrorOpen && <EffortMirror onClose={() => setMirrorOpen(false)} />}
       {accountOpen && <AccountPanel onClose={() => setAccountOpen(false)} />}
+      {landingOpen && (
+        <Landing
+          onEnter={() => {
+            localStorage.setItem(LANDING_DONE_KEY, 'done')
+            setLandingOpen(false)
+          }}
+        />
+      )}
       {tourOpen && (
         <Tour
           ctx={{ setView, setSelectedId, setMirrorOpen }}
