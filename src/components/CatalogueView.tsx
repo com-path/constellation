@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import type { Person } from '../types'
 import { RING_NAMES } from '../types'
 import { useStore } from '../store/store'
-import { actionsFor, cadenceFor, daysSinceTouch, daysUntilDate } from '../lib/closeness'
+import { actionsFor, cadenceFor, daysSinceTouch, daysUntilDate, overdueRatio } from '../lib/closeness'
 import { friendshipDuration, relativeDay } from '../lib/dates'
 
 // The catalogue: every star in rows — search, filter, sort. Columns are facts
@@ -24,6 +24,10 @@ interface Row {
   cadence: number | null
   flagged: boolean
   hasReminder: boolean
+  /** Quietly asking for a catch-up: overdue by rhythm (or flagged), with nothing scheduled. */
+  needsCatchup: boolean
+  /** Outside the reminder loop — no check-in rhythm applies. */
+  dormant: boolean
 }
 
 const COLUMNS: Array<{ key: SortKey | null; label: string; title?: string }> = [
@@ -58,7 +62,13 @@ export function CatalogueView({ onSelectPerson }: { onSelectPerson: (id: string)
           .map((d) => ({ label: d.label, days: daysUntilDate(d.date) }))
           .sort((a, b) => a.days - b.days)[0]
         const moments = actionsFor(state.actions, person.id).length
+        const cadence = cadenceFor(person)
+        const flagged = !!person.flaggedAt
+        const scheduled = !!person.nextSeeing
         return {
+          needsCatchup:
+            !scheduled && (flagged || (cadence != null && overdueRatio(state.actions, person) > 1)),
+          dormant: cadence == null && !flagged && !scheduled,
           person,
           ringOrder: RING_ORDER[String(person.ring)] ?? 9,
           sinceTs: person.knownSince ? Date.parse(person.knownSince) : null,
@@ -67,8 +77,8 @@ export function CatalogueView({ onSelectPerson }: { onSelectPerson: (id: string)
           nextDate: upcoming ?? null,
           moments,
           seeing: person.nextSeeing ?? null,
-          cadence: cadenceFor(person),
-          flagged: !!person.flaggedAt,
+          cadence,
+          flagged,
           hasReminder: state.reminders.some((r) => r.personId === person.id && !r.done),
         }
       }),
@@ -143,6 +153,10 @@ export function CatalogueView({ onSelectPerson }: { onSelectPerson: (id: string)
         <span className="muted small">
           {visible.length} of {state.people.length} people
         </span>
+        <span className="muted small catalogue-legend">
+          Warm rows could use a catch-up — scheduling one settles them. Dimmed rows have no
+          check-in rhythm.
+        </span>
       </div>
 
       <div className="catalogue-scroll">
@@ -165,7 +179,18 @@ export function CatalogueView({ onSelectPerson }: { onSelectPerson: (id: string)
           </thead>
           <tbody>
             {visible.map((r) => (
-              <tr key={r.person.id} onClick={() => onSelectPerson(r.person.id)}>
+              <tr
+                key={r.person.id}
+                className={r.needsCatchup ? 'cat-due' : r.dormant ? 'cat-dormant' : undefined}
+                title={
+                  r.needsCatchup
+                    ? 'Could use a catch-up — schedule one and this settles'
+                    : r.dormant
+                      ? 'No check-in rhythm — outside the reminder loop'
+                      : undefined
+                }
+                onClick={() => onSelectPerson(r.person.id)}
+              >
                 <td className="cat-name">
                   {r.person.name}
                   {r.flagged && (

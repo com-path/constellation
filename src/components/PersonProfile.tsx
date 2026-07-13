@@ -413,7 +413,12 @@ function SeeingNext({ person }: { person: Person }) {
     if (!date) return
     dispatch({
       type: 'update_person',
-      person: { ...person, nextSeeing: { date, note: note.trim() || undefined } },
+      // Scheduling the catch-up answers the flag — a date in the diary settles it.
+      person: {
+        ...person,
+        nextSeeing: { date, note: note.trim() || undefined },
+        flaggedAt: undefined,
+      },
     })
     setDate('')
     setNote('')

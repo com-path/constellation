@@ -349,7 +349,7 @@ export function weeklySuggestions(state: AppState, now = Date.now()): WeeklySugg
 
   // 3. The most quietly overdue, weighted by ring cadence.
   const overdue = state.people
-    .filter((p) => !used.has(p.id))
+    .filter((p) => !used.has(p.id) && !p.nextSeeing)
     .map((p) => ({ p, ratio: overdueRatio(state.actions, p, now) }))
     .filter((x) => x.ratio > 1)
     .sort((a, b) => b.ratio - a.ratio)
@@ -413,8 +413,9 @@ export function attentionItems(state: AppState, now = Date.now()): AttentionItem
       continue
     }
     // overdueRatio is 0 unless a cadence applies (ring default, or personal override —
-    // which works even for outer-field people).
-    if (ratio > 1) {
+    // which works even for outer-field people). A scheduled plan settles the matter:
+    // once a meeting is in the diary there is nothing to nudge about.
+    if (ratio > 1 && !p.nextSeeing) {
       overdue.push({
         personId: p.id,
         kind: 'overdue',

@@ -1090,6 +1090,31 @@ textarea.wide {
   color: #d8cba4;
 }
 
+.catalogue-legend {
+  margin-left: auto;
+  font-style: italic;
+}
+
+.catalogue-table tbody tr.cat-due {
+  background: rgba(217, 185, 108, 0.055);
+}
+
+.catalogue-table tbody tr.cat-due td:first-child {
+  border-left: 2px solid rgba(217, 185, 108, 0.55);
+}
+
+.catalogue-table tbody tr.cat-due:hover {
+  background: rgba(217, 185, 108, 0.1);
+}
+
+.catalogue-table tbody tr.cat-dormant {
+  opacity: 0.5;
+}
+
+.catalogue-table tbody tr.cat-dormant:hover {
+  opacity: 0.85;
+}
+
 /* ——— Text utilities ——— */
 .muted {
   color: var(--ink-muted);
