@@ -1,4 +1,13 @@
-import { createContext, useContext, useEffect, useReducer, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useReducer,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 import type {
   ActionLog,
   AppState,
@@ -11,6 +20,7 @@ import type {
 } from '../types'
 import { pairKey } from '../types'
 import { buildSeedState } from '../data/seed'
+import { takeSnapshot, type BackupReason } from '../lib/backups'
 
 // Local-first (§10.3): the whole state lives in this browser, nowhere else.
 // This data — grief anniversaries, worries, repair notes — never leaves the device.
@@ -210,9 +220,25 @@ function loadInitial(): AppState {
 
 const StoreContext = createContext<{ state: AppState; dispatch: (a: Action) => void } | null>(null)
 
+// Actions that replace the whole sky. Before any of them lands, the current
+// state is snapshotted (src/lib/backups.ts) so it can always be restored.
+const DESTRUCTIVE_REASONS: Partial<Record<Action['type'], BackupReason>> = {
+  reset_demo: 'demo',
+  clear_all: 'clear',
+  load_state: 'replaced',
+}
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, loadInitial)
   const [storageError, setStorageError] = useState<string | null>(null)
+  const stateRef = useRef(state)
+  stateRef.current = state
+
+  const guardedDispatch = useCallback((action: Action) => {
+    const reason = DESTRUCTIVE_REASONS[action.type]
+    if (reason) takeSnapshot(stateRef.current, reason)
+    dispatch(action)
+  }, [])
 
   useEffect(() => {
     try {
@@ -227,7 +253,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [state])
 
   return (
-    <StoreContext.Provider value={{ state, dispatch }}>
+    <StoreContext.Provider value={{ state, dispatch: guardedDispatch }}>
       {storageError && (
         <div
           role="alert"

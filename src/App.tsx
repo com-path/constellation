@@ -3,6 +3,8 @@ import type { ViewMode } from './types'
 import { StoreProvider, useStore } from './store/store'
 import { SyncProvider, useSync } from './sync/SyncContext'
 import { AccountPanel, SyncStatusButton } from './components/AccountPanel'
+import { BackupsPanel } from './components/BackupsPanel'
+import { isDemoSky } from './lib/backups'
 import { Tour, TOUR_DONE_KEY } from './components/Tour'
 import { GettingStarted } from './components/GettingStarted'
 import { CatalogueView } from './components/CatalogueView'
@@ -53,6 +55,7 @@ function AppInner() {
     setSelectedId(id)
   }, [])
   const [accountOpen, setAccountOpen] = useState(false)
+  const [backupsOpen, setBackupsOpen] = useState(false)
   const [tourOpen, setTourOpen] = useState(
     () => localStorage.getItem(TOUR_DONE_KEY) !== 'done',
   )
@@ -256,13 +259,32 @@ function AppInner() {
           <button className="link small" onClick={() => setLandingOpen(true)}>
             about
           </button>
-          <button className="link small" onClick={() => dispatch({ type: 'reset_demo' })}>
+          <button className="link small" onClick={() => setBackupsOpen(true)}>
+            backups
+          </button>
+          <button
+            className="link small"
+            onClick={() => {
+              // The example replaces the current sky, so a real sky needs a
+              // knowing yes first — and it's backed up automatically either way.
+              if (
+                state.people.length === 0 ||
+                isDemoSky(state) ||
+                window.confirm(
+                  'Open the example sky? Your own sky will be saved as a backup first — restore it any time from “backups” in the footer.',
+                )
+              ) {
+                dispatch({ type: 'reset_demo' })
+                setSelectedId(null)
+              }
+            }}
+          >
             demo sky
           </button>
           <button
             className="link small"
             onClick={() => {
-              if (window.confirm('Start with an empty sky? Your current constellation will be erased from this browser.')) {
+              if (window.confirm('Start with an empty sky? A backup of your current constellation is kept under “backups” in the footer.')) {
                 dispatch({ type: 'clear_all' })
                 setSelectedId(null)
               }
@@ -280,6 +302,7 @@ function AppInner() {
       {notePerson && <QuickNoteModal person={notePerson} onClose={() => setNoteFor(null)} />}
       {mirrorOpen && <EffortMirror onClose={() => setMirrorOpen(false)} />}
       {accountOpen && <AccountPanel onClose={() => setAccountOpen(false)} />}
+      {backupsOpen && <BackupsPanel onClose={() => setBackupsOpen(false)} />}
       {landingOpen && (
         <Landing
           onEnter={() => {
@@ -295,7 +318,17 @@ function AppInner() {
             localStorage.setItem(TOUR_DONE_KEY, 'done')
             setTourOpen(false)
             setMirrorOpen(false)
-            if (startFresh) {
+            // "Start my own sky" is meant to clear the demo. If the tour ran
+            // over a real sky instead, clearing it needs an explicit yes —
+            // this exact click has cost a beta tester their whole sky.
+            if (
+              startFresh &&
+              (state.people.length === 0 ||
+                isDemoSky(state) ||
+                window.confirm(
+                  'This sky has your own data in it, not the example. Clear it anyway? A backup is kept under “backups” in the footer.',
+                ))
+            ) {
               dispatch({ type: 'clear_all' })
               setSelectedId(null)
               setView('closeness')
