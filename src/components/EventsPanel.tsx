@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { EventItem, EventKind } from '../types'
-import { EVENT_KIND_NAMES, uid } from '../types'
+import { EVENT_KIND_NAMES, PRESET_EVENT_TAGS, uid } from '../types'
 import { useStore } from '../store/store'
 import { eventCandidates, reverseSuggestions } from '../lib/events'
 
@@ -33,6 +33,16 @@ export function EventsPanel({
   const [reversePeople, setReversePeople] = useState<string[]>([])
 
   const event = state.events.find((e) => e.id === selectedEventId) ?? null
+
+  // Tag vocabulary: presets plus every "good events for them" tag on people's pages,
+  // so an event tag lines up with how people are already marked.
+  const knownTags = useMemo(() => {
+    const set = new Map<string, string>()
+    for (const t of PRESET_EVENT_TAGS) set.set(t.toLowerCase(), t)
+    for (const p of state.people)
+      for (const t of p.details.eventTags) set.set(t.toLowerCase(), t)
+    return [...set.values()].sort()
+  }, [state.people])
   const candidates = useMemo(
     () => (event ? eventCandidates(state, event) : []),
     [state, event],
@@ -165,8 +175,40 @@ export function EventsPanel({
             className="wide"
             placeholder="Tags, comma-separated (live music, hiking…)"
             value={tags}
+            list="event-tag-list"
             onChange={(e) => setTags(e.target.value)}
           />
+          <datalist id="event-tag-list">
+            {knownTags.map((t) => (
+              <option key={t} value={t} />
+            ))}
+          </datalist>
+          {knownTags.length > 0 && (
+            <div className="chip-row">
+              {knownTags.slice(0, 8).map((t) => (
+                <button
+                  key={t}
+                  className="chip"
+                  title="Add tag"
+                  onClick={() =>
+                    setTags((cur) =>
+                      cur
+                        .split(',')
+                        .map((x) => x.trim())
+                        .filter(Boolean)
+                        .includes(t)
+                        ? cur
+                        : cur.trim()
+                          ? `${cur.trim()}, ${t}`
+                          : t,
+                    )
+                  }
+                >
+                  + {t}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="kind-row">
             {(Object.keys(EVENT_KIND_NAMES) as EventKind[]).map((k) => (
               <button

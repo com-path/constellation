@@ -22,6 +22,7 @@ interface PersonSeed {
   occupation?: string
   details?: Partial<Person['details']>
   flaggedDaysAgo?: number
+  checkinDays?: number
 }
 
 const emptyDetails = (): Person['details'] => ({
@@ -35,6 +36,7 @@ const emptyDetails = (): Person['details'] => ({
   theirPeople: [],
   giftIdeas: [],
   repairNotes: [],
+  eventTags: [],
 })
 
 function makePerson(seed: PersonSeed, ageDays: number): Person {
@@ -50,6 +52,7 @@ function makePerson(seed: PersonSeed, ageDays: number): Person {
     ringHistory: [{ ring: seed.ring, at: daysAgo(ageDays) }],
     createdAt: daysAgo(ageDays),
     flaggedAt: seed.flaggedDaysAgo != null ? daysAgo(seed.flaggedDaysAgo) : undefined,
+    checkinDays: seed.checkinDays,
   }
 }
 
@@ -76,6 +79,7 @@ const peopleSeeds: PersonSeed[] = [
       dreams: ['Finishing the novel draft by autumn'],
       theirPeople: ['Partner: Tomas', 'Sister: Kemi'],
       giftIdeas: ['First edition of anything by Jean Rhys'],
+      eventTags: ['long dinner', 'exhibition', 'a walk'],
     },
   },
   {
@@ -152,6 +156,7 @@ const peopleSeeds: PersonSeed[] = [
     occupation: 'Chef',
     details: {
       loves: ['Natural wine', 'Cycling at dawn', 'Arguing about tomatoes'],
+      eventTags: ['long dinner', 'outdoors'],
       toDiscuss: ['The flat situation — he was stressed about it'],
       dates: [{ id: uid(), label: 'Birthday', date: '04-08' }],
       dreams: ['Opening his own small place next year'],
@@ -167,6 +172,7 @@ const peopleSeeds: PersonSeed[] = [
     occupation: 'Architect',
     details: {
       loves: ['Brutalism', 'Karaoke (secretly)', 'Long ambitious walks'],
+      eventTags: ['exhibition', 'a walk', 'big party'],
       toDiscuss: ['Her verdict on the gallery show'],
       admires: ['Notices what rooms do to people'],
       dates: [{ id: uid(), label: 'Birthday', date: '12-05' }],
@@ -290,6 +296,7 @@ const peopleSeeds: PersonSeed[] = [
     occupation: 'Pastry chef',
     details: {
       loves: ['Yuzu anything', 'Jazz records'],
+      eventTags: ['live music', 'dinner party'],
       dates: [{ id: uid(), label: 'Birthday', date: '06-06' }],
       dreams: ['A stall at the weekend market'],
     },
@@ -342,6 +349,7 @@ const peopleSeeds: PersonSeed[] = [
     occupation: 'Illustrator',
     details: {
       loves: ['Comics', 'Bouldering', 'Coffee nerdery'],
+      eventTags: ['coffee', 'outdoors'],
       dreams: ['New to the city, building a life here'],
     },
   },
@@ -430,6 +438,7 @@ const peopleSeeds: PersonSeed[] = [
       dates: [{ id: uid(), label: 'Birthday', date: '10-31' }],
       loves: ['Crossword rivalry by post'],
     },
+    checkinDays: 60, // outer field, but family — a personal rhythm keeps her in view
   },
   {
     id: 'cousin-theo',

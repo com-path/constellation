@@ -42,6 +42,13 @@ export function eventCandidates(state: AppState, event: EventItem): EventCandida
     const reasons: string[] = []
     let score = 0
 
+    // Your own judgement first — event types you've marked as right for them
+    const marked = tagMatches(event.tags, p.details.eventTags)
+    if (marked.length > 0) {
+      score += marked.length * 4
+      reasons.push(`You've marked them for ${marked.slice(0, 2).join(', ').toLowerCase()}`)
+    }
+
     // Fit — flagged interests (§3.1c)
     const fits = tagMatches(event.tags, p.details.loves)
     if (fits.length > 0) {
@@ -49,9 +56,9 @@ export function eventCandidates(state: AppState, event: EventItem): EventCandida
       reasons.push(`Loves ${fits.slice(0, 2).join(', ').toLowerCase()}`)
     }
 
-    // Timing — overdue, weighted by ring cadence (open question 9: cadence-relative)
+    // Timing — overdue relative to their check-in rhythm (personal override or ring default)
     const ratio = overdueRatio(state.actions, p)
-    if (ratio > 1 && p.ring !== 'outer') {
+    if (ratio > 1) {
       score += Math.min(3, ratio)
       reasons.push(`You haven't crossed paths in ${daysSinceTouch(state.actions, p)} days`)
     }
@@ -105,6 +112,18 @@ export function reverseSuggestions(state: AppState, personIds: string[]): string
   if (people.length === 0) return []
 
   const suggestions: string[] = []
+  // Event types you've marked for everyone selected — your own curation wins
+  let sharedTags = people[0].details.eventTags
+  for (const p of people.slice(1)) {
+    sharedTags = sharedTags.filter((t) => tagMatches([t], p.details.eventTags).length > 0)
+  }
+  for (const t of sharedTags) {
+    suggestions.push(
+      people.length === 1
+        ? `${t[0].toUpperCase() + t.slice(1)} — you've marked them for it`
+        : `${t[0].toUpperCase() + t.slice(1)} — you've marked all of them for it`,
+    )
+  }
   // Shared loves across everyone selected
   let shared = people[0].details.loves
   for (const p of people.slice(1)) {

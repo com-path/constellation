@@ -73,13 +73,29 @@ export interface Person {
     theirPeople: string[] // partner, kids, the ones they talk about
     giftIdeas: string[] // scratchpad so December isn't a panic
     repairNotes: string[] // ongoing friction, maintenance debt
+    eventTags: string[] // kinds of outings that fit them — feeds event matching
   }
   ringHistory: RingChange[]
   createdAt: number
   /** Set by the user: "I want to check in with them soon." Sits at the top of the
    *  Attention view until cleared — or auto-cleared by logging a moment with them. */
   flaggedAt?: number
+  /** Personal check-in rhythm in days. undefined = the ring's default; 0 = no reminders. */
+  checkinDays?: number
 }
+
+/** Starting points for "good events for them" — free text is equally welcome. */
+export const PRESET_EVENT_TAGS = [
+  'coffee',
+  'a walk',
+  'long dinner',
+  'dinner party',
+  'live music',
+  'exhibition',
+  'outdoors',
+  'cinema',
+  'big party',
+]
 
 /** Person ↔ Person thread. Fixed history — it doesn't change with closeness. */
 export interface Edge {

@@ -67,9 +67,17 @@ export function bondStrength(actions: ActionLog[], person: Person, now = Date.no
   return Math.min(10, base + Math.min(4.5, acc * 0.45))
 }
 
-/** How overdue relative to the ring's cadence. 1.0 = right at cadence. */
+/** The check-in rhythm that applies to this person: their personal override
+ *  (0 = reminders off), or their ring's default. */
+export function cadenceFor(person: Person): number | null {
+  if (person.checkinDays === 0) return null
+  if (person.checkinDays != null) return person.checkinDays
+  return RING_CADENCE[String(person.ring)]
+}
+
+/** How overdue relative to the applicable cadence. 1.0 = right at cadence. */
 export function overdueRatio(actions: ActionLog[], person: Person, now = Date.now()): number {
-  const cadence = RING_CADENCE[String(person.ring)]
+  const cadence = cadenceFor(person)
   if (cadence == null) return 0
   return daysSinceTouch(actions, person, now) / cadence
 }
@@ -300,7 +308,7 @@ export function weeklySuggestions(state: AppState, now = Date.now()): WeeklySugg
 
   // 3. The most quietly overdue, weighted by ring cadence.
   const overdue = state.people
-    .filter((p) => !used.has(p.id) && p.ring !== 'outer')
+    .filter((p) => !used.has(p.id))
     .map((p) => ({ p, ratio: overdueRatio(state.actions, p, now) }))
     .filter((x) => x.ratio > 1)
     .sort((a, b) => b.ratio - a.ratio)
@@ -340,7 +348,9 @@ export function attentionItems(state: AppState, now = Date.now()): AttentionItem
       })
       continue
     }
-    if (ratio > 1 && p.ring !== 'outer') {
+    // overdueRatio is 0 unless a cadence applies (ring default, or personal override —
+    // which works even for outer-field people).
+    if (ratio > 1) {
       overdue.push({
         personId: p.id,
         kind: 'overdue',

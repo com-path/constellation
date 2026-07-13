@@ -3,19 +3,29 @@ import type { Person, Ring } from '../types'
 import {
   ACTION_TYPE_META,
   MODALITY_NAMES,
+  PRESET_EVENT_TAGS,
   RING_DESCRIPTIONS,
   RING_NAMES,
   uid,
 } from '../types'
 import { useStore } from '../store/store'
-import { actionsFor, daysSinceTouch, pathInward } from '../lib/closeness'
+import { actionsFor, cadenceFor, daysSinceTouch, pathInward, RING_CADENCE } from '../lib/closeness'
 import { EditableList, fmtDateFull } from './ui'
 
-// The person page (§3): tapping a star. All of §3.1 plus the candidate
-// additions from §3.2 that survived scrutiny (their people, repair notes,
-// gift ideas, the position-over-time sparkline).
+// The person page (§3): tapping a star. On desktop it opens as a broad page —
+// the story, the texture, and the practical side by side — because being able
+// to take a friend in at a glance is the whole point of keeping this.
 
 const RING_OPTIONS: Ring[] = [1, 2, 3, 4, 'outer']
+
+const RHYTHM_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: '7', label: 'Weekly' },
+  { value: '14', label: 'Every two weeks' },
+  { value: '30', label: 'Monthly' },
+  { value: '60', label: 'Every two months' },
+  { value: '90', label: 'Quarterly' },
+  { value: '0', label: 'No reminders' },
+]
 
 export function PersonProfile({
   person,
@@ -41,6 +51,8 @@ export function PersonProfile({
 
   const observation = pathInward(state, person)
   const days = daysSinceTouch(state.actions, person)
+  const ringDefault = RING_CADENCE[String(person.ring)]
+  const cadence = cadenceFor(person)
 
   const update = (partial: Partial<Person['details']>) =>
     dispatch({
@@ -66,262 +78,379 @@ export function PersonProfile({
   }
 
   return (
-    <aside className="profile-drawer">
-      <div className="profile-header">
-        <button className="icon-btn" onClick={onClose} aria-label="Close profile">
-          ×
-        </button>
-        <h2>{person.name}</h2>
-        <p className="muted">
-          {[person.occupation, person.location].filter(Boolean).join(' · ')}
-        </p>
-        <p className="how-met">{person.howMet}</p>
-        <p className="muted small">
-          {person.contexts.join(' · ')}
-          {days > 0 ? ` · last crossed paths ${days} days ago` : ' · crossed paths today'}
-        </p>
-
-        <label className="ring-select">
-          <span>Orbit</span>
-          <select
-            value={String(person.ring)}
-            onChange={(e) => {
-              const v = e.target.value
-              dispatch({
-                type: 'move_ring',
-                personId: person.id,
-                ring: v === 'outer' ? 'outer' : (Number(v) as Ring),
-              })
-            }}
-          >
-            {RING_OPTIONS.map((r) => (
-              <option key={String(r)} value={String(r)}>
-                {RING_NAMES[String(r)]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <p className="hint">{RING_DESCRIPTIONS[String(person.ring)]}</p>
-
-        {person.ringHistory.length > 1 && <JourneySparkline person={person} />}
-
-        {observation && <p className="observation">{observation}</p>}
-
-        <div className="profile-actions">
-          <button className="btn" onClick={onLogAction}>
-            Log a moment
-          </button>
-          <button className="btn ghost" onClick={onQuickNote}>
-            Quick note
-          </button>
-          <button
-            className={`btn ghost ${person.flaggedAt ? 'flag-on' : ''}`}
-            title={
-              person.flaggedAt
-                ? 'Flagged for attention — click to clear'
-                : 'Pin them to the Attention view until you next reach out'
-            }
-            onClick={() =>
-              dispatch({
-                type: 'update_person',
-                person: { ...person, flaggedAt: person.flaggedAt ? undefined : Date.now() },
-              })
-            }
-          >
-            {person.flaggedAt ? '⚑ Flagged' : '⚑ Flag for attention'}
-          </button>
-        </div>
-        {person.flaggedAt != null && (
-          <p className="hint">
-            {person.name} will sit at the top of the Attention view until you log a moment
-            with them, or clear the flag.
-          </p>
-        )}
-      </div>
-
-      <div className="profile-sections">
-        <section>
-          <h3>Shared history</h3>
-          {history.length === 0 && (
-            <p className="hint">Nothing logged yet — the story starts whenever you do.</p>
-          )}
-          <ul className="history-list">
-            {history.map((a) => (
-              <li key={a.id}>
-                <span
-                  className="type-dot"
-                  style={{ background: ACTION_TYPE_META[a.type].color }}
-                  title={ACTION_TYPE_META[a.type].name}
-                />
-                <div>
-                  <div className="history-note">{a.note || ACTION_TYPE_META[a.type].name}</div>
-                  <div className="muted small">
-                    {fmtDateFull(a.timestamp)} · {ACTION_TYPE_META[a.type].name} ·{' '}
-                    {MODALITY_NAMES[a.modality]}
-                    {a.participants.length > 1 &&
-                      ` · with ${a.participants
-                        .filter((id) => id !== person.id)
-                        .map((id) => state.people.find((p) => p.id === id)?.name)
-                        .filter(Boolean)
-                        .join(', ')}`}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section>
-          <h3>Special details</h3>
-          <EditableList
-            label="Rituals & recurrences"
-            hint="The annual thing, the Sunday call, the birthday tradition."
-            items={person.details.rituals}
-            onChange={(rituals) => update({ rituals })}
-          />
-          <EditableList
-            label="Things they love"
-            hint="Their tea, their band, their favourite bookshop."
-            items={person.details.loves}
-            onChange={(loves) => update({ loves })}
-          />
-          <EditableList
-            label="For next time"
-            hint="Things you want to discuss with them."
-            items={person.details.toDiscuss}
-            onChange={(toDiscuss) => update({ toDiscuss })}
-          />
-          <EditableList
-            label="In-jokes & shared language"
-            items={person.details.inJokes}
-            onChange={(inJokes) => update({ inJokes })}
-          />
-        </section>
-
-        <section>
-          <h3>Green flags</h3>
-          <EditableList
-            label="What you admire about them"
-            hint="Mirror it back to them sometime — one of the most underrated acts of friendship."
-            items={person.details.admires}
-            onChange={(admires) => update({ admires })}
-          />
-        </section>
-
-        <section>
-          <h3>Important dates</h3>
-          <ul className="dates-list">
-            {person.details.dates.map((d) => (
-              <li key={d.id} className={d.hard ? 'hard-date' : ''}>
-                <span>
-                  {d.label} — {d.date}
-                  {d.hard && <em> · a hard one; showing up matters</em>}
-                </span>
-                <button
-                  className="icon-btn subtle"
-                  aria-label={`Remove ${d.label}`}
-                  onClick={() =>
-                    update({ dates: person.details.dates.filter((x) => x.id !== d.id) })
-                  }
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
-          <div className="add-row">
-            <input
-              placeholder="Label (e.g. Birthday)"
-              value={dateLabel}
-              onChange={(e) => setDateLabel(e.target.value)}
-            />
-            <input
-              placeholder="MM-DD"
-              value={dateVal}
-              style={{ maxWidth: '5.5rem' }}
-              onChange={(e) => setDateVal(e.target.value)}
-            />
-            <label className="checkbox small">
-              <input
-                type="checkbox"
-                checked={dateHard}
-                onChange={(e) => setDateHard(e.target.checked)}
-              />
-              a hard one
-            </label>
-            <button
-              className="btn small"
-              onClick={addDate}
-              disabled={!dateLabel.trim() || !/^\d{2}-\d{2}$/.test(dateVal)}
-            >
-              Add
-            </button>
+    <div className="person-scrim" onClick={onClose}>
+      <aside className="person-page" onClick={(e) => e.stopPropagation()}>
+        <header className="person-head">
+          <div className="person-id">
+            <h2>{person.name}</h2>
+            <p className="muted">
+              {[person.occupation, person.location].filter(Boolean).join(' · ')}
+            </p>
+            <p className="how-met">{person.howMet}</p>
+            <p className="muted small">
+              {person.contexts.join(' · ')}
+              {days > 0 ? ` · last crossed paths ${days} days ago` : ' · crossed paths today'}
+            </p>
+            {observation && <p className="observation">{observation}</p>}
           </div>
-        </section>
 
-        <section>
-          <h3>In motion</h3>
-          <EditableList
-            label="Dreams, goals & worries"
-            hint="What they're working toward or worried about — fuel for the “how did it go?” check-in."
-            items={person.details.dreams}
-            onChange={(dreams) => update({ dreams })}
-          />
-        </section>
-
-        <ThreadsSection person={person} />
-
-        <section>
-          <h3>Their people</h3>
-          <EditableList
-            label="Partner, kids, the ones they talk about"
-            hint="Knowing the names matters."
-            items={person.details.theirPeople}
-            onChange={(theirPeople) => update({ theirPeople })}
-          />
-        </section>
-
-        <section>
-          <h3>Scratchpads</h3>
-          <EditableList
-            label="Gift ideas & letter fragments"
-            hint="Accretes over the year so December isn't a panic."
-            items={person.details.giftIdeas}
-            onChange={(giftIdeas) => update({ giftIdeas })}
-          />
-          <EditableList
-            label="Repair notes"
-            hint="Ongoing friction, an unresolved thing, an apology you owe. Friendships have maintenance debt."
-            items={person.details.repairNotes}
-            onChange={(repairNotes) => update({ repairNotes })}
-          />
-        </section>
-
-        <section className="danger-zone">
-          {confirmRemove ? (
-            <div className="confirm-row">
-              <span className="muted small">Remove {person.name} and their history?</span>
-              <button
-                className="btn small danger"
-                onClick={() => {
-                  dispatch({ type: 'remove_person', personId: person.id })
-                  onClose()
-                }}
-              >
-                Remove
+          <div className="person-side">
+            <button className="icon-btn person-close" onClick={onClose} aria-label="Close">
+              ×
+            </button>
+            <div className="person-actions">
+              <button className="btn" onClick={onLogAction}>
+                Log a moment
               </button>
-              <button className="btn small ghost" onClick={() => setConfirmRemove(false)}>
-                Keep
+              <button className="btn ghost" onClick={onQuickNote}>
+                Quick note
+              </button>
+              <button
+                className={`btn ghost ${person.flaggedAt ? 'flag-on' : ''}`}
+                title={
+                  person.flaggedAt
+                    ? 'Flagged for attention — click to clear'
+                    : 'Pin them to the Attention view until you next reach out'
+                }
+                onClick={() =>
+                  dispatch({
+                    type: 'update_person',
+                    person: { ...person, flaggedAt: person.flaggedAt ? undefined : Date.now() },
+                  })
+                }
+              >
+                {person.flaggedAt ? '⚑ Flagged' : '⚑ Flag for attention'}
               </button>
             </div>
-          ) : (
-            <button className="btn small ghost muted" onClick={() => setConfirmRemove(true)}>
-              Remove from constellation
+
+            <label className="ring-select">
+              <span>Orbit</span>
+              <select
+                value={String(person.ring)}
+                onChange={(e) => {
+                  const v = e.target.value
+                  dispatch({
+                    type: 'move_ring',
+                    personId: person.id,
+                    ring: v === 'outer' ? 'outer' : (Number(v) as Ring),
+                  })
+                }}
+              >
+                {RING_OPTIONS.map((r) => (
+                  <option key={String(r)} value={String(r)}>
+                    {RING_NAMES[String(r)]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="hint">{RING_DESCRIPTIONS[String(person.ring)]}</p>
+
+            <label className="ring-select">
+              <span>Check-in rhythm</span>
+              <select
+                value={person.checkinDays != null ? String(person.checkinDays) : ''}
+                onChange={(e) =>
+                  dispatch({
+                    type: 'update_person',
+                    person: {
+                      ...person,
+                      checkinDays:
+                        e.target.value === '' ? undefined : Number(e.target.value),
+                    },
+                  })
+                }
+              >
+                <option value="">
+                  {ringDefault != null
+                    ? `Ring default (~${ringDefault} days)`
+                    : 'Ring default (no reminders)'}
+                </option>
+                {RHYTHM_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="hint">
+              {cadence == null
+                ? 'They won’t appear as overdue in the Attention view.'
+                : `Attention will gently surface them after ~${cadence} days of silence.`}
+            </p>
+
+            {person.ringHistory.length > 1 && <JourneySparkline person={person} />}
+          </div>
+        </header>
+
+        <div className="person-columns">
+          {/* ——— The story ——— */}
+          <div className="pcol">
+            <h3 className="pcol-title">The story</h3>
+            <section className="psec">
+              {history.length === 0 && (
+                <p className="hint">Nothing logged yet — the story starts whenever you do.</p>
+              )}
+              <ul className="history-list">
+                {history.map((a) => (
+                  <li key={a.id}>
+                    <span
+                      className="type-dot"
+                      style={{ background: ACTION_TYPE_META[a.type].color }}
+                      title={ACTION_TYPE_META[a.type].name}
+                    />
+                    <div>
+                      <div className="history-note">
+                        {a.note || ACTION_TYPE_META[a.type].name}
+                      </div>
+                      <div className="muted small">
+                        {fmtDateFull(a.timestamp)} · {ACTION_TYPE_META[a.type].name} ·{' '}
+                        {MODALITY_NAMES[a.modality]}
+                        {a.participants.length > 1 &&
+                          ` · with ${a.participants
+                            .filter((id) => id !== person.id)
+                            .map((id) => state.people.find((p) => p.id === id)?.name)
+                            .filter(Boolean)
+                            .join(', ')}`}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
+
+          {/* ——— The texture ——— */}
+          <div className="pcol">
+            <h3 className="pcol-title">The texture</h3>
+            <section className="psec">
+              <EditableList
+                label="Rituals & recurrences"
+                hint="The annual thing, the Sunday call, the birthday tradition."
+                items={person.details.rituals}
+                onChange={(rituals) => update({ rituals })}
+              />
+            </section>
+            <section className="psec">
+              <EditableList
+                label="Things they love"
+                hint="Their tea, their band, their favourite bookshop."
+                items={person.details.loves}
+                onChange={(loves) => update({ loves })}
+              />
+            </section>
+            <section className="psec">
+              <EditableList
+                label="For next time"
+                hint="Things you want to discuss with them. These show in Attention."
+                items={person.details.toDiscuss}
+                onChange={(toDiscuss) => update({ toDiscuss })}
+              />
+            </section>
+            <section className="psec">
+              <EditableList
+                label="Green flags — what you admire"
+                hint="Mirror it back to them sometime; it's one of the most underrated acts of friendship."
+                items={person.details.admires}
+                onChange={(admires) => update({ admires })}
+              />
+            </section>
+            <section className="psec">
+              <EditableList
+                label="In-jokes & shared language"
+                items={person.details.inJokes}
+                onChange={(inJokes) => update({ inJokes })}
+              />
+            </section>
+          </div>
+
+          {/* ——— The practical ——— */}
+          <div className="pcol">
+            <h3 className="pcol-title">The practical</h3>
+
+            <section className="psec">
+              <h4>Good events for them</h4>
+              <p className="hint">
+                What kind of outing fits {person.name}? The Events view uses these to match.
+              </p>
+              <EventTagsEditor person={person} onChange={(eventTags) => update({ eventTags })} />
+            </section>
+
+            <section className="psec">
+              <h4>Important dates</h4>
+              <ul className="dates-list">
+                {person.details.dates.map((d) => (
+                  <li key={d.id} className={d.hard ? 'hard-date' : ''}>
+                    <span>
+                      {d.label} — {d.date}
+                      {d.hard && <em> · a hard one; showing up matters</em>}
+                    </span>
+                    <button
+                      className="icon-btn subtle"
+                      aria-label={`Remove ${d.label}`}
+                      onClick={() =>
+                        update({ dates: person.details.dates.filter((x) => x.id !== d.id) })
+                      }
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="add-row">
+                <input
+                  placeholder="Label (e.g. Birthday)"
+                  value={dateLabel}
+                  onChange={(e) => setDateLabel(e.target.value)}
+                />
+                <input
+                  placeholder="MM-DD"
+                  value={dateVal}
+                  style={{ maxWidth: '5.5rem' }}
+                  onChange={(e) => setDateVal(e.target.value)}
+                />
+                <label className="checkbox small">
+                  <input
+                    type="checkbox"
+                    checked={dateHard}
+                    onChange={(e) => setDateHard(e.target.checked)}
+                  />
+                  a hard one
+                </label>
+                <button
+                  className="btn small"
+                  onClick={addDate}
+                  disabled={!dateLabel.trim() || !/^\d{2}-\d{2}$/.test(dateVal)}
+                >
+                  Add
+                </button>
+              </div>
+            </section>
+
+            <section className="psec">
+              <EditableList
+                label="In motion — dreams, goals & worries"
+                hint="What they're working toward or worried about — fuel for the “how did it go?” check-in."
+                items={person.details.dreams}
+                onChange={(dreams) => update({ dreams })}
+              />
+            </section>
+
+            <section className="psec">
+              <EditableList
+                label="Their people"
+                hint="Partner, kids, the ones they talk about. Knowing the names matters."
+                items={person.details.theirPeople}
+                onChange={(theirPeople) => update({ theirPeople })}
+              />
+            </section>
+
+            <ThreadsSection person={person} />
+
+            <section className="psec">
+              <EditableList
+                label="Gift ideas & letter fragments"
+                hint="Accretes over the year so December isn't a panic."
+                items={person.details.giftIdeas}
+                onChange={(giftIdeas) => update({ giftIdeas })}
+              />
+            </section>
+            <section className="psec">
+              <EditableList
+                label="Repair notes"
+                hint="Ongoing friction, an unresolved thing, an apology you owe."
+                items={person.details.repairNotes}
+                onChange={(repairNotes) => update({ repairNotes })}
+              />
+            </section>
+
+            <section className="psec danger-zone">
+              {confirmRemove ? (
+                <div className="confirm-row">
+                  <span className="muted small">Remove {person.name} and their history?</span>
+                  <button
+                    className="btn small danger"
+                    onClick={() => {
+                      dispatch({ type: 'remove_person', personId: person.id })
+                      onClose()
+                    }}
+                  >
+                    Remove
+                  </button>
+                  <button className="btn small ghost" onClick={() => setConfirmRemove(false)}>
+                    Keep
+                  </button>
+                </div>
+              ) : (
+                <button className="btn small ghost muted" onClick={() => setConfirmRemove(true)}>
+                  Remove from constellation
+                </button>
+              )}
+            </section>
+          </div>
+        </div>
+      </aside>
+    </div>
+  )
+}
+
+/** Tag editor for the kinds of events that suit this person. */
+function EventTagsEditor({
+  person,
+  onChange,
+}: {
+  person: Person
+  onChange: (tags: string[]) => void
+}) {
+  const [draft, setDraft] = useState('')
+  const tags = person.details.eventTags
+  const presets = PRESET_EVENT_TAGS.filter(
+    (p) => !tags.some((t) => t.toLowerCase() === p.toLowerCase()),
+  )
+  const add = (tag: string) => {
+    const v = tag.trim()
+    if (!v || tags.some((t) => t.toLowerCase() === v.toLowerCase())) return
+    onChange([...tags, v])
+    setDraft('')
+  }
+  return (
+    <div>
+      {tags.length > 0 && (
+        <div className="chip-row">
+          {tags.map((t) => (
+            <span key={t} className="chip chip-on chip-static">
+              {t}
+              <button
+                className="chip-x"
+                aria-label={`Remove ${t}`}
+                onClick={() => onChange(tags.filter((x) => x !== t))}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      {presets.length > 0 && (
+        <div className="chip-row">
+          {presets.map((p) => (
+            <button key={p} className="chip" title="Add" onClick={() => add(p)}>
+              + {p}
             </button>
-          )}
-        </section>
+          ))}
+        </div>
+      )}
+      <div className="add-row">
+        <input
+          value={draft}
+          placeholder="Or your own — “bouldering”, “board games night”…"
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && add(draft)}
+        />
+        <button className="btn small" onClick={() => add(draft)} disabled={!draft.trim()}>
+          Add
+        </button>
       </div>
-    </aside>
+    </div>
   )
 }
 
@@ -346,8 +475,8 @@ function ThreadsSection({ person }: { person: Person }) {
     .sort((a, b) => a.name.localeCompare(b.name))
 
   return (
-    <section>
-      <h3>Threads</h3>
+    <section className="psec">
+      <h4>Threads</h4>
       {threads.length === 0 && (
         <p className="hint">Nobody in your sky is linked to {person.name} yet.</p>
       )}

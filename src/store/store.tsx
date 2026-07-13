@@ -130,9 +130,36 @@ function reducer(state: AppState, action: Action): AppState {
       return { people: [], edges: [], actions: [], events: [], sparkStates: [], dismissedProposals: [] }
     case 'load_state':
       // Wholesale replacement — used when a decrypted sky arrives from sync.
-      return action.state
+      return normalizeState(action.state)
     default:
       return state
+  }
+}
+
+/** Fill fields added after a state was saved, so old local/cloud skies keep working. */
+function normalizeState(s: AppState): AppState {
+  return {
+    people: (s.people ?? []).map((p) => ({
+      ...p,
+      details: {
+        rituals: p.details?.rituals ?? [],
+        loves: p.details?.loves ?? [],
+        toDiscuss: p.details?.toDiscuss ?? [],
+        inJokes: p.details?.inJokes ?? [],
+        admires: p.details?.admires ?? [],
+        dates: p.details?.dates ?? [],
+        dreams: p.details?.dreams ?? [],
+        theirPeople: p.details?.theirPeople ?? [],
+        giftIdeas: p.details?.giftIdeas ?? [],
+        repairNotes: p.details?.repairNotes ?? [],
+        eventTags: p.details?.eventTags ?? [],
+      },
+    })),
+    edges: s.edges ?? [],
+    actions: s.actions ?? [],
+    events: s.events ?? [],
+    sparkStates: s.sparkStates ?? [],
+    dismissedProposals: s.dismissedProposals ?? [],
   }
 }
 
@@ -141,7 +168,7 @@ function loadInitial(): AppState {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as AppState
-      if (Array.isArray(parsed.people)) return parsed
+      if (Array.isArray(parsed.people)) return normalizeState(parsed)
     }
   } catch {
     // fall through to seed

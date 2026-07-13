@@ -41,6 +41,7 @@ export function AddPersonModal({ onClose }: { onClose: () => void }) {
         theirPeople: [],
         giftIdeas: [],
         repairNotes: [],
+        eventTags: [],
       },
       ringHistory: [{ ring, at: Date.now() }],
       createdAt: Date.now(),
