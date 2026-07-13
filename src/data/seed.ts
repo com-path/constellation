@@ -24,6 +24,8 @@ interface PersonSeed {
   flaggedDaysAgo?: number
   checkinDays?: number
   knownSinceDaysAgo?: number
+  planInDays?: number
+  planNote?: string
 }
 
 function dateStr(offsetDays: number): string {
@@ -61,6 +63,10 @@ function makePerson(seed: PersonSeed, ageDays: number): Person {
     flaggedAt: seed.flaggedDaysAgo != null ? daysAgo(seed.flaggedDaysAgo) : undefined,
     checkinDays: seed.checkinDays,
     knownSince: seed.knownSinceDaysAgo != null ? dateStr(-seed.knownSinceDaysAgo) : undefined,
+    nextSeeing:
+      seed.planInDays != null
+        ? { date: dateStr(seed.planInDays), note: seed.planNote }
+        : undefined,
   }
 }
 
@@ -162,6 +168,8 @@ const peopleSeeds: PersonSeed[] = [
     ring: 2,
     flaggedDaysAgo: 2,
     knownSinceDaysAgo: 240,
+    planInDays: 3,
+    planNote: 'Dinner at his new place',
     howMet: 'Neighbour; bonded over a burst pipe that flooded both flats',
     location: 'Same street',
     occupation: 'Chef',

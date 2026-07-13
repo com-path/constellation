@@ -118,6 +118,12 @@ export function PersonProfile({
                 }
               />
             </p>
+            {person.nextSeeing && (
+              <p className="muted small">
+                ◑ Seeing them {relativeDay(person.nextSeeing.date)}
+                {person.nextSeeing.note && ` — ${person.nextSeeing.note}`}
+              </p>
+            )}
             {observation && <p className="observation">{observation}</p>}
           </div>
 
@@ -213,6 +219,7 @@ export function PersonProfile({
           {/* ——— The story: reminders ahead, then the timeline back to the beginning ——— */}
           <div className="pcol">
             <h3 className="pcol-title">The story</h3>
+            <SeeingNext person={person} />
             <ComingUp person={person} />
             <Timeline person={person} history={history} />
           </div>
@@ -392,6 +399,63 @@ export function PersonProfile({
         </button>
       </aside>
     </div>
+  )
+}
+
+/** The next concrete plan with this person — a date in the diary, not a hope. */
+function SeeingNext({ person }: { person: Person }) {
+  const { dispatch } = useStore()
+  const [date, setDate] = useState('')
+  const [note, setNote] = useState('')
+  const plan = person.nextSeeing
+
+  const set = () => {
+    if (!date) return
+    dispatch({
+      type: 'update_person',
+      person: { ...person, nextSeeing: { date, note: note.trim() || undefined } },
+    })
+    setDate('')
+    setNote('')
+  }
+
+  return (
+    <section className="psec">
+      <h4>Seeing them next</h4>
+      {plan ? (
+        <ul className="dates-list">
+          <li>
+            <span>
+              ◑ {relativeDay(plan.date)}
+              {plan.note && <span className="muted small"> — {plan.note}</span>}
+            </span>
+            <button
+              className="icon-btn subtle"
+              aria-label="Clear the plan"
+              title="Clear — e.g. it moved or fell through"
+              onClick={() =>
+                dispatch({ type: 'update_person', person: { ...person, nextSeeing: undefined } })
+              }
+            >
+              ×
+            </button>
+          </li>
+        </ul>
+      ) : (
+        <div className="add-row">
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <input
+            placeholder="What's the plan? (optional)"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && set()}
+          />
+          <button className="btn small" onClick={set} disabled={!date}>
+            Set
+          </button>
+        </div>
+      )}
+    </section>
   )
 }
 

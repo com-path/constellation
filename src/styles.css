@@ -1086,6 +1086,10 @@ textarea.wide {
   font-weight: 600;
 }
 
+.cat-seeing {
+  color: #d8cba4;
+}
+
 /* ——— Text utilities ——— */
 .muted {
   color: var(--ink-muted);

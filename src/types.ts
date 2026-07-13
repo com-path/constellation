@@ -84,6 +84,8 @@ export interface Person {
   checkinDays?: number
   /** When the friendship began (YYYY-MM-DD, approximate is fine). */
   knownSince?: string
+  /** The next time you're scheduled to see them — a concrete plan, not a hope. */
+  nextSeeing?: { date: string; note?: string }
 }
 
 /** A time-anchored check-in the user scheduled themselves —

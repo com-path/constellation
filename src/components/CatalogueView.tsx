@@ -3,12 +3,12 @@ import type { Person } from '../types'
 import { RING_NAMES } from '../types'
 import { useStore } from '../store/store'
 import { actionsFor, cadenceFor, daysSinceTouch, daysUntilDate } from '../lib/closeness'
-import { friendshipDuration } from '../lib/dates'
+import { friendshipDuration, relativeDay } from '../lib/dates'
 
 // The catalogue: every star in rows — search, filter, sort. Columns are facts
 // and dates, never scores (§1.3): the table organises, it does not rank people.
 
-type SortKey = 'name' | 'ring' | 'since' | 'last' | 'next' | 'moments'
+type SortKey = 'name' | 'ring' | 'since' | 'last' | 'seeing' | 'next' | 'moments'
 
 const RING_ORDER: Record<string, number> = { 1: 1, 2: 2, 3: 3, 4: 4, outer: 5 }
 
@@ -20,6 +20,7 @@ interface Row {
   hasMoments: boolean
   nextDate: { label: string; days: number } | null
   moments: number
+  seeing: { date: string; note?: string } | null
   cadence: number | null
   flagged: boolean
   hasReminder: boolean
@@ -32,6 +33,7 @@ const COLUMNS: Array<{ key: SortKey | null; label: string; title?: string }> = [
   { key: 'since', label: 'Friends for' },
   { key: 'last', label: 'Last crossed paths' },
   { key: null, label: 'Rhythm', title: 'Check-in rhythm (ring default or personal)' },
+  { key: 'seeing', label: 'Seeing next', title: 'Your next scheduled plan together' },
   { key: 'next', label: 'Next date' },
   { key: 'moments', label: 'Moments' },
 ]
@@ -64,6 +66,7 @@ export function CatalogueView({ onSelectPerson }: { onSelectPerson: (id: string)
           hasMoments: moments > 0,
           nextDate: upcoming ?? null,
           moments,
+          seeing: person.nextSeeing ?? null,
           cadence: cadenceFor(person),
           flagged: !!person.flaggedAt,
           hasReminder: state.reminders.some((r) => r.personId === person.id && !r.done),
@@ -97,6 +100,7 @@ export function CatalogueView({ onSelectPerson }: { onSelectPerson: (id: string)
       ring: (a, b) => a.ringOrder - b.ringOrder || a.person.name.localeCompare(b.person.name),
       since: (a, b) => (a.sinceTs ?? Infinity) - (b.sinceTs ?? Infinity),
       last: (a, b) => a.lastDays - b.lastDays,
+      seeing: (a, b) => (a.seeing?.date ?? '9999').localeCompare(b.seeing?.date ?? '9999'),
       next: (a, b) => (a.nextDate?.days ?? Infinity) - (b.nextDate?.days ?? Infinity),
       moments: (a, b) => a.moments - b.moments,
     }
@@ -190,6 +194,11 @@ export function CatalogueView({ onSelectPerson }: { onSelectPerson: (id: string)
                     : 'nothing logged yet'}
                 </td>
                 <td className="muted">{r.cadence != null ? `~${r.cadence}d` : '—'}</td>
+                <td className={r.seeing ? 'cat-seeing' : 'muted'}>
+                  {r.seeing
+                    ? `${relativeDay(r.seeing.date)}${r.seeing.note ? ` · ${r.seeing.note}` : ''}`
+                    : '—'}
+                </td>
                 <td className="muted">
                   {r.nextDate
                     ? `${r.nextDate.label} · ${

@@ -251,6 +251,19 @@ export function dueReminders(state: AppState, horizonDays = 7, now = Date.now())
     .sort((a, b) => a.date.localeCompare(b.date))
 }
 
+/** Scheduled meet-ups near enough to matter: within the horizon, or already past
+ *  (a passed plan waits to be logged or cleared, so it never silently vanishes). */
+export function upcomingPlans(
+  state: AppState,
+  horizonDays = 7,
+  now = Date.now(),
+): Array<{ person: Person; date: string; note?: string }> {
+  return state.people
+    .filter((p) => p.nextSeeing && daysFromToday(p.nextSeeing.date, now) <= horizonDays)
+    .map((p) => ({ person: p, date: p.nextSeeing!.date, note: p.nextSeeing!.note }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+}
+
 /** Days until the next occurrence of an MM-DD date. */
 export function daysUntilDate(mmdd: string, now = Date.now()): number {
   const [m, d] = mmdd.split('-').map(Number)
@@ -268,7 +281,17 @@ export function weeklySuggestions(state: AppState, now = Date.now()): WeeklySugg
   const out: WeeklySuggestion[] = []
   const used = new Set<string>()
 
-  // 0a. Reminders that have come due — you scheduled these for a reason.
+  // 0a. Concrete plans about to happen — nothing outranks an actual date in the diary.
+  for (const plan of upcomingPlans(state, 2, now).slice(0, 2)) {
+    if (used.has(plan.person.id)) continue
+    out.push({
+      personId: plan.person.id,
+      reason: `You're seeing ${plan.person.name} ${relativeDay(plan.date, now)}${plan.note ? ` — ${plan.note}` : ''}.`,
+    })
+    used.add(plan.person.id)
+  }
+
+  // 0b. Reminders that have come due — you scheduled these for a reason.
   for (const r of dueReminders(state, 2, now).slice(0, 2)) {
     if (used.has(r.personId)) continue
     out.push({
@@ -278,7 +301,7 @@ export function weeklySuggestions(state: AppState, now = Date.now()): WeeklySugg
     used.add(r.personId)
   }
 
-  // 0b. People you flagged yourself — you already decided they matter.
+  // 0c. People you flagged yourself — you already decided they matter.
   const flagged = state.people
     .filter((p) => p.flaggedAt && !used.has(p.id))
     .sort((a, b) => (b.flaggedAt ?? 0) - (a.flaggedAt ?? 0))
@@ -344,20 +367,35 @@ export function weeklySuggestions(state: AppState, now = Date.now()): WeeklySugg
 
 export interface AttentionItem {
   personId: string
-  kind: 'reminder' | 'flagged' | 'overdue' | 'on_your_mind'
+  kind: 'plan' | 'reminder' | 'flagged' | 'overdue' | 'on_your_mind'
   note: string
   reminderId?: string
+  /** Sort key for the Coming up section (plans and reminders interleave by date). */
+  date?: string
 }
 
 /** Attention view (§2.6): people you flagged, overdue people, and anything
  *  waiting under "for next time" — always shown, no timing cleverness. */
 export function attentionItems(state: AppState, now = Date.now()): AttentionItem[] {
-  const reminders: AttentionItem[] = dueReminders(state, 7, now).map((r) => ({
-    personId: r.personId,
-    kind: 'reminder',
-    note: `${r.note} — ${relativeDay(r.date, now)}`,
-    reminderId: r.id,
+  const plans: AttentionItem[] = upcomingPlans(state, 7, now).map((pl) => ({
+    personId: pl.person.id,
+    kind: 'plan',
+    note:
+      daysFromToday(pl.date, now) < 0
+        ? `You planned to see them ${relativeDay(pl.date, now)}${pl.note ? ` (${pl.note})` : ''} — log it?`
+        : `Seeing them ${relativeDay(pl.date, now)}${pl.note ? ` — ${pl.note}` : ''}`,
+    date: pl.date,
   }))
+  const reminders: AttentionItem[] = [
+    ...plans,
+    ...dueReminders(state, 7, now).map((r) => ({
+      personId: r.personId,
+      kind: 'reminder' as const,
+      note: `${r.note} — ${relativeDay(r.date, now)}`,
+      reminderId: r.id,
+      date: r.date,
+    })),
+  ].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
   const remindedIds = new Set(reminders.map((r) => r.personId))
   const flagged: AttentionItem[] = []
   const overdue: Array<AttentionItem & { ratio: number }> = []
