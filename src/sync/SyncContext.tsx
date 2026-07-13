@@ -93,7 +93,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     return (data as SkyRow | null) ?? null
   }, [])
 
-  const pushNow = useCallback(async (userId: string, retryCount = 0) => {
+  const pushNow = useCallback(async (userId: string) => {
     const key = keyRef.current
     const salt = saltRef.current
     if (!key || !salt) return
@@ -274,26 +274,25 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
   }, [session, pushNow, pendingSync])
 
-  // Unload handler: flush pending changes before page unload
+  // Flush pending changes when the tab is backgrounded or closed.
+  // beforeunload cannot reliably await async work — browsers don't wait for
+  // it — so we fire the flush on visibilitychange instead, which fires
+  // synchronously and early enough (tab switch, close, minimize) to give
+  // the request a real chance to leave before the page is torn down.
   useEffect(() => {
     if (!session || !keyRef.current || !readyToPushRef.current) return
 
-    const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
-      if (pendingSync) {
-        // Try to sync before unload (short timeout)
-        try {
-          const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 1000) // 1 second max
-          await pushNow(session.user.id)
-          clearTimeout(timeoutId)
-        } catch {
-          // Don't block unload if sync fails
-        }
+    const flushIfPending = () => {
+      if (document.visibilityState === 'hidden' && pendingSync) {
+        pushNow(session.user.id).catch(() => {
+          // Best-effort — the local copy still holds everything, and the
+          // next foreground sync attempt will retry.
+        })
       }
     }
 
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    document.addEventListener('visibilitychange', flushIfPending)
+    return () => document.removeEventListener('visibilitychange', flushIfPending)
   }, [session, pendingSync, pushNow])
 
   return (

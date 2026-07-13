@@ -18,6 +18,13 @@ export interface StorageStatus {
 const DB_NAME = 'constellation-backup'
 const BACKUP_STORE = 'sync-queue'
 
+function promisifyRequest<T>(request: IDBRequest<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () => reject(request.error)
+  })
+}
+
 export class StorageMonitor {
   private static instance: StorageMonitor
 
@@ -115,7 +122,7 @@ export class StorageMonitor {
     try {
       const db = await this.openDB()
       const tx = db.transaction(BACKUP_STORE, 'readwrite')
-      await tx.objectStore(BACKUP_STORE).put(operation)
+      await promisifyRequest(tx.objectStore(BACKUP_STORE).put(operation))
     } catch (e) {
       console.error('[Storage] Failed to queue sync operation:', e)
     }
@@ -135,7 +142,7 @@ export class StorageMonitor {
     try {
       const db = await this.openDB()
       const tx = db.transaction(BACKUP_STORE, 'readonly')
-      const allOps = await tx.objectStore(BACKUP_STORE).getAll()
+      const allOps = await promisifyRequest(tx.objectStore(BACKUP_STORE).getAll())
       return allOps as Array<{
         id: string
         timestamp: number
@@ -154,7 +161,7 @@ export class StorageMonitor {
     try {
       const db = await this.openDB()
       const tx = db.transaction(BACKUP_STORE, 'readwrite')
-      await tx.objectStore(BACKUP_STORE).delete(id)
+      await promisifyRequest(tx.objectStore(BACKUP_STORE).delete(id))
     } catch (e) {
       console.error('[Storage] Failed to remove sync operation:', e)
     }
@@ -212,7 +219,7 @@ export class StorageMonitor {
 
   private async getIndexedDBStatus() {
     try {
-      const db = await this.openDB()
+      await this.openDB()
       return { available: true, error: null }
     } catch (e) {
       return {
@@ -234,13 +241,15 @@ export class StorageMonitor {
   private async writeToIndexedDB(key: string, data: string): Promise<void> {
     const db = await this.openDB()
     const tx = db.transaction('data', 'readwrite')
-    await tx.objectStore('data').put({ key, value: data, timestamp: Date.now() })
+    await promisifyRequest(tx.objectStore('data').put({ key, value: data, timestamp: Date.now() }))
   }
 
   private async readFromIndexedDB(key: string): Promise<string | null> {
     const db = await this.openDB()
     const tx = db.transaction('data', 'readonly')
-    const result = await tx.objectStore('data').get(key)
+    const result = await promisifyRequest<{ key: string; value: string; timestamp: number } | undefined>(
+      tx.objectStore('data').get(key),
+    )
     return result?.value ?? null
   }
 
