@@ -55,6 +55,14 @@ export function AttentionPanel({
                         className="btn small ghost"
                         title="Clear the plan — e.g. it moved or fell through"
                         onClick={() => {
+                          if (it.eventId) {
+                            dispatch({
+                              type: 'toggle_event_invite',
+                              eventId: it.eventId,
+                              personId: it.personId,
+                            })
+                            return
+                          }
                           const person = state.people.find((p) => p.id === it.personId)
                           if (person)
                             dispatch({

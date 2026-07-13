@@ -251,16 +251,57 @@ export function dueReminders(state: AppState, horizonDays = 7, now = Date.now())
     .sort((a, b) => a.date.localeCompare(b.date))
 }
 
-/** Scheduled meet-ups near enough to matter: within the horizon, or already past
- *  (a passed plan waits to be logged or cleared, so it never silently vanishes). */
+export interface Engagement {
+  date: string
+  note?: string
+  source: 'plan' | 'event'
+  eventId?: string
+}
+
+/** Everything scheduled with a person: their one-to-one plan plus any dated
+ *  events they're invited to. Sorted by date. */
+export function engagementsFor(state: AppState, person: Person): Engagement[] {
+  const out: Engagement[] = []
+  if (person.nextSeeing) {
+    out.push({ date: person.nextSeeing.date, note: person.nextSeeing.note, source: 'plan' })
+  }
+  for (const e of state.events) {
+    if (e.date && e.invited.includes(person.id)) {
+      out.push({ date: e.date, note: e.what, source: 'event', eventId: e.id })
+    }
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date))
+}
+
+/** The next thing in the diary with this person — the soonest upcoming engagement,
+ *  or the most recent past one (a passed plan waits to be logged, never vanishes). */
+export function nextEngagement(state: AppState, person: Person, now = Date.now()): Engagement | null {
+  const all = engagementsFor(state, person)
+  if (all.length === 0) return null
+  return all.find((e) => daysFromToday(e.date, now) >= 0) ?? all[all.length - 1]
+}
+
+/** True when something is in the diary: any future engagement, or one so recent
+ *  it's still waiting to be logged. Settles flags and overdue nudges. */
+export function hasEngagement(state: AppState, person: Person, now = Date.now()): boolean {
+  const e = nextEngagement(state, person, now)
+  return e != null && daysFromToday(e.date, now) >= -7
+}
+
+/** Scheduled meet-ups near enough to matter: within the horizon, or recently past. */
 export function upcomingPlans(
   state: AppState,
   horizonDays = 7,
   now = Date.now(),
-): Array<{ person: Person; date: string; note?: string }> {
+): Array<{ person: Person; date: string; note?: string; source: 'plan' | 'event'; eventId?: string }> {
   return state.people
-    .filter((p) => p.nextSeeing && daysFromToday(p.nextSeeing.date, now) <= horizonDays)
-    .map((p) => ({ person: p, date: p.nextSeeing!.date, note: p.nextSeeing!.note }))
+    .flatMap((p) => {
+      const e = nextEngagement(state, p, now)
+      if (!e) return []
+      const days = daysFromToday(e.date, now)
+      if (days > horizonDays || days < -7) return []
+      return [{ person: p, date: e.date, note: e.note, source: e.source, eventId: e.eventId }]
+    })
     .sort((a, b) => a.date.localeCompare(b.date))
 }
 
@@ -349,7 +390,7 @@ export function weeklySuggestions(state: AppState, now = Date.now()): WeeklySugg
 
   // 3. The most quietly overdue, weighted by ring cadence.
   const overdue = state.people
-    .filter((p) => !used.has(p.id) && !p.nextSeeing)
+    .filter((p) => !used.has(p.id) && !hasEngagement(state, p, now))
     .map((p) => ({ p, ratio: overdueRatio(state.actions, p, now) }))
     .filter((x) => x.ratio > 1)
     .sort((a, b) => b.ratio - a.ratio)
@@ -370,6 +411,8 @@ export interface AttentionItem {
   kind: 'plan' | 'reminder' | 'flagged' | 'overdue' | 'on_your_mind'
   note: string
   reminderId?: string
+  /** Set on 'plan' items that come from an event invitation — clearing means uninviting. */
+  eventId?: string
   /** Sort key for the Coming up section (plans and reminders interleave by date). */
   date?: string
 }
@@ -385,6 +428,7 @@ export function attentionItems(state: AppState, now = Date.now()): AttentionItem
         ? `You planned to see them ${relativeDay(pl.date, now)}${pl.note ? ` (${pl.note})` : ''} — log it?`
         : `Seeing them ${relativeDay(pl.date, now)}${pl.note ? ` — ${pl.note}` : ''}`,
     date: pl.date,
+    eventId: pl.eventId,
   }))
   const reminders: AttentionItem[] = [
     ...plans,
@@ -413,9 +457,9 @@ export function attentionItems(state: AppState, now = Date.now()): AttentionItem
       continue
     }
     // overdueRatio is 0 unless a cadence applies (ring default, or personal override —
-    // which works even for outer-field people). A scheduled plan settles the matter:
-    // once a meeting is in the diary there is nothing to nudge about.
-    if (ratio > 1 && !p.nextSeeing) {
+    // which works even for outer-field people). Anything in the diary — a plan or an
+    // event invitation — settles the matter: nothing to nudge about.
+    if (ratio > 1 && !hasEngagement(state, p, now)) {
       overdue.push({
         personId: p.id,
         kind: 'overdue',

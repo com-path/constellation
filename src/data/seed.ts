@@ -576,9 +576,11 @@ export function buildSeedState(): AppState {
         id: uid(),
         what: 'Spare ticket: Khruangbin at the Roundhouse',
         when: 'Friday night',
+        date: dateStr(5),
         where: 'The Roundhouse',
         kind: 'large_event',
         tags: ['live music', 'jazz records', 'vinyl'],
+        invited: ['yuki'],
       },
     ],
     sparkStates: [

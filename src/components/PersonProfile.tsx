@@ -402,12 +402,16 @@ export function PersonProfile({
   )
 }
 
-/** The next concrete plan with this person — a date in the diary, not a hope. */
+/** The next concrete plan with this person — a date in the diary, not a hope.
+ *  Event invitations show here too: they're engagements like any other. */
 function SeeingNext({ person }: { person: Person }) {
-  const { dispatch } = useStore()
+  const { state, dispatch } = useStore()
   const [date, setDate] = useState('')
   const [note, setNote] = useState('')
   const plan = person.nextSeeing
+  const invitedEvents = state.events
+    .filter((e) => e.invited.includes(person.id))
+    .sort((a, b) => (a.date ?? '9999').localeCompare(b.date ?? '9999'))
 
   const set = () => {
     if (!date) return
@@ -459,6 +463,31 @@ function SeeingNext({ person }: { person: Person }) {
             Set
           </button>
         </div>
+      )}
+      {invitedEvents.length > 0 && (
+        <>
+          <h4>Events together</h4>
+          <ul className="dates-list">
+            {invitedEvents.map((e) => (
+              <li key={e.id}>
+                <span>
+                  ◇ {e.what}
+                  <span className="muted small"> — {e.date ? relativeDay(e.date) : e.when}</span>
+                </span>
+                <button
+                  className="icon-btn subtle"
+                  aria-label={`Uninvite from ${e.what}`}
+                  title="Remove them from this event"
+                  onClick={() =>
+                    dispatch({ type: 'toggle_event_invite', eventId: e.id, personId: person.id })
+                  }
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </section>
   )

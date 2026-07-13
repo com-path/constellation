@@ -60,6 +60,8 @@ interface Props {
   selectedId: string | null
   /** When set, stars outside this set recede (events/attention/sparks lenses). */
   highlightIds: Set<string> | null
+  /** People invited to the active event — drawn with a gold ring (events lens). */
+  invitedIds: Set<string> | null
   /** Potential introductions to draw as shimmering dashed threads (sparks lens). */
   sparkPairs: Array<[string, string]>
   onSelect: (id: string | null) => void
@@ -439,6 +441,15 @@ export function ConstellationCanvas(props: Props) {
           ctx.lineWidth = 1
           ctx.beginPath()
           ctx.arc(x, y, r + 5 + Math.sin(t * 2) * 1.2, 0, Math.PI * 2)
+          ctx.stroke()
+        }
+
+        // Invited to the active event: a steady gold ring — they're on the list.
+        if (p.invitedIds?.has(n.id)) {
+          ctx.strokeStyle = 'rgba(217, 185, 108, 0.9)'
+          ctx.lineWidth = 1.6
+          ctx.beginPath()
+          ctx.arc(x, y, r + 4, 0, Math.PI * 2)
           ctx.stroke()
         }
 

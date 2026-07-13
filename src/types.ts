@@ -141,9 +141,13 @@ export interface EventItem {
   id: string
   what: string
   when: string
+  /** YYYY-MM-DD — set when the event has an actual date; drives scheduling. */
+  date?: string
   where?: string
   kind: EventKind
   tags: string[]
+  /** People you've added to this event — a scheduled engagement for each of them. */
+  invited: string[]
 }
 
 export type SparkStatus = 'suggested' | 'dismissed' | 'introduced' | 'landed'

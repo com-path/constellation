@@ -25,6 +25,7 @@ export type Action =
   | { type: 'log_action'; action: ActionLog }
   | { type: 'add_event'; event: EventItem }
   | { type: 'remove_event'; eventId: string }
+  | { type: 'toggle_event_invite'; eventId: string; personId: string }
   | { type: 'set_spark_status'; a: string; b: string; status: SparkStatus; context?: string }
   | { type: 'dismiss_proposal'; key: string }
   | { type: 'add_edge'; edge: Edge }
@@ -93,6 +94,20 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, events: [...state.events, action.event] }
     case 'remove_event':
       return { ...state, events: state.events.filter((e) => e.id !== action.eventId) }
+    case 'toggle_event_invite':
+      return {
+        ...state,
+        events: state.events.map((e) =>
+          e.id === action.eventId
+            ? {
+                ...e,
+                invited: e.invited.includes(action.personId)
+                  ? e.invited.filter((id) => id !== action.personId)
+                  : [...e.invited, action.personId],
+              }
+            : e,
+        ),
+      }
     case 'set_spark_status': {
       const key = pairKey(action.a, action.b)
       const rest = state.sparkStates.filter((s) => s.pairKey !== key)
@@ -173,7 +188,7 @@ function normalizeState(s: AppState): AppState {
     })),
     edges: s.edges ?? [],
     actions: s.actions ?? [],
-    events: s.events ?? [],
+    events: (s.events ?? []).map((e) => ({ ...e, invited: e.invited ?? [] })),
     sparkStates: s.sparkStates ?? [],
     dismissedProposals: s.dismissedProposals ?? [],
     reminders: s.reminders ?? [],

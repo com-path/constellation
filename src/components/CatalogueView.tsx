@@ -2,7 +2,15 @@ import { useMemo, useState } from 'react'
 import type { Person } from '../types'
 import { RING_NAMES } from '../types'
 import { useStore } from '../store/store'
-import { actionsFor, cadenceFor, daysSinceTouch, daysUntilDate, overdueRatio } from '../lib/closeness'
+import {
+  actionsFor,
+  cadenceFor,
+  daysSinceTouch,
+  daysUntilDate,
+  hasEngagement,
+  nextEngagement,
+  overdueRatio,
+} from '../lib/closeness'
 import { friendshipDuration, relativeDay } from '../lib/dates'
 
 // The catalogue: every star in rows — search, filter, sort. Columns are facts
@@ -64,7 +72,8 @@ export function CatalogueView({ onSelectPerson }: { onSelectPerson: (id: string)
         const moments = actionsFor(state.actions, person.id).length
         const cadence = cadenceFor(person)
         const flagged = !!person.flaggedAt
-        const scheduled = !!person.nextSeeing
+        // A plan or an event invitation both count as "something in the diary".
+        const scheduled = hasEngagement(state, person)
         return {
           needsCatchup:
             !scheduled && (flagged || (cadence != null && overdueRatio(state.actions, person) > 1)),
@@ -76,7 +85,7 @@ export function CatalogueView({ onSelectPerson }: { onSelectPerson: (id: string)
           hasMoments: moments > 0,
           nextDate: upcoming ?? null,
           moments,
-          seeing: person.nextSeeing ?? null,
+          seeing: nextEngagement(state, person),
           cadence,
           flagged,
           hasReminder: state.reminders.some((r) => r.personId === person.id && !r.done),

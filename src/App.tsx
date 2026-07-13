@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ViewMode } from './types'
 import { StoreProvider, useStore } from './store/store'
 import { SyncProvider, useSync } from './sync/SyncContext'
@@ -40,6 +40,16 @@ function AppInner() {
   const [mirrorOpen, setMirrorOpen] = useState(false)
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const [eventHighlight, setEventHighlight] = useState<Set<string> | null>(null)
+  const [invitedIds, setInvitedIds] = useState<Set<string> | null>(null)
+  // The events panel can claim star-clicks (to toggle invitations) via this handler.
+  const starHandlerRef = useRef<((personId: string) => boolean) | null>(null)
+  const registerStarHandler = useCallback((fn: ((personId: string) => boolean) | null) => {
+    starHandlerRef.current = fn
+  }, [])
+  const handleStarSelect = useCallback((id: string | null) => {
+    if (id && starHandlerRef.current?.(id)) return
+    setSelectedId(id)
+  }, [])
   const [accountOpen, setAccountOpen] = useState(false)
   const [tourOpen, setTourOpen] = useState(
     () => localStorage.getItem(TOUR_DONE_KEY) !== 'done',
@@ -135,6 +145,7 @@ function AppInner() {
                 if (v.id !== 'events') {
                   setEventHighlight(null)
                   setSelectedEventId(null)
+                  setInvitedIds(null)
                 }
               }}
             >
@@ -170,8 +181,9 @@ function AppInner() {
             viewMode={view}
             selectedId={selectedId}
             highlightIds={highlightIds}
+            invitedIds={view === 'events' ? invitedIds : null}
             sparkPairs={sparkPairs}
-            onSelect={setSelectedId}
+            onSelect={handleStarSelect}
           />
         )}
 
@@ -181,6 +193,8 @@ function AppInner() {
             selectedEventId={selectedEventId}
             onSelectEvent={setSelectedEventId}
             onHighlight={setEventHighlight}
+            onInvitedChange={setInvitedIds}
+            registerStarHandler={registerStarHandler}
             onSelectPerson={setSelectedId}
           />
         )}
