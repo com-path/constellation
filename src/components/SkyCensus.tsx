@@ -137,6 +137,7 @@ export function SkyCensus({ onClose }: { onClose: () => void }) {
                 b,
                 context: groupName.trim(),
                 introducedByUser: false,
+                createdAt: Date.now(),
               })),
             )
           : []

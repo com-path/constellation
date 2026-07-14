@@ -36,6 +36,16 @@ Without this setup the app still works fully, just locally in one browser.
 
 3. Email sign-in is on by default (Authentication → Sign In / Up → Email). Nothing to do
    unless you've changed defaults. Magic links are used, so no passwords are stored.
+4. **Recommended:** open **Authentication → Emails → Magic Link** and add the one-time code
+   to the template, e.g. a line like:
+
+   ```html
+   <p>Or enter this code: {{ .Token }}</p>
+   ```
+
+   Phone email apps often open the link in their own built-in browser, which signs in the
+   wrong browser. The code lets you sign in the browser you're actually using — the app has
+   a "6-digit code" field right under "check your email".
 4. Open **Settings → API** and copy two values:
    - **Project URL** (like `https://abcdefgh.supabase.co`)
    - **anon / public key** (a long string starting `eyJ…`)
@@ -64,6 +74,8 @@ in your inbox, choose a passphrase — you're syncing.
 4. Click **Deploy**. You'll get a URL like `https://constellation-xyz.vercel.app`.
 5. Back in Supabase: **Authentication → URL Configuration**, set **Site URL** to your
    Vercel URL (and add it to Redirect URLs). This is where the magic-link emails point.
+6. If you set the project up before the merge-based sync update, no database change is
+   needed — the same `skies` table works as-is.
 
 Every push to the connected branch redeploys automatically.
 
@@ -79,9 +91,25 @@ Every push to the connected branch redeploys automatically.
   encrypted with. Both are needed on a new device.
 - The working copy on each device stays in that browser's localStorage, as before.
 
+## How two devices stay in agreement
+
+- Devices **merge, they don't overwrite**: every record (person, thread, moment, event,
+  reminder) is reconciled individually — the newest edit of a record wins, moments simply
+  combine, and deletions are remembered (for ~6 months) so a removed star doesn't
+  reappear when an old copy syncs in.
+- Every upload is **version-checked**: if the other device wrote first, this one pulls,
+  merges, and retries instead of overwriting. A device left open for days can no longer
+  erase the other's recent changes.
+- A device **pulls when its tab wakes up** and **flushes just before it disappears**, so
+  quick edit-then-pocket moments still land.
+- Sync only runs after the **passphrase** is entered on that device — signing in with the
+  email alone is not enough (the passphrase *is* the encryption key). The footer shows the
+  live status; "☁ locked" means the passphrase step is still pending.
+- Simultaneous edits to the *same field of the same person* on two devices within the same
+  moment still resolve to the newer edit — that's the one remaining conflict, and it's the
+  size of one field, not your whole sky.
+
 ## Limits worth knowing (v1)
 
-- Last write wins between devices — fine for one person, don't edit on two devices in
-  the same minute and expect a merge.
 - Changing the passphrase isn't built yet (workaround: sign out everywhere, delete the
   row in Supabase's Table Editor, sign in on the device that has the data, pick a new one).

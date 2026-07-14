@@ -296,13 +296,13 @@ export function buildBatch(
     // are the user's history to draw, not the importer's.
     for (let i = 0; i < newcomers.length; i++) {
       for (let j = i + 1; j < newcomers.length; j++) {
-        edges.push({ a: newcomers[i].id, b: newcomers[j].id, context, introducedByUser: false })
+        edges.push({ a: newcomers[i].id, b: newcomers[j].id, context, introducedByUser: false, createdAt: Date.now() })
       }
       for (const old of already) {
         const key = pairKey(newcomers[i].id, old.id)
         if (seen.has(key)) continue
         seen.add(key)
-        edges.push({ a: newcomers[i].id, b: old.id, context, introducedByUser: false })
+        edges.push({ a: newcomers[i].id, b: old.id, context, introducedByUser: false, createdAt: Date.now() })
       }
     }
   }

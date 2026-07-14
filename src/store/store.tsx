@@ -11,6 +11,7 @@ import type {
 } from '../types'
 import { pairKey } from '../types'
 import { buildSeedState } from '../data/seed'
+import { isDemoState, mergeStates, stableStringify } from '../lib/merge'
 
 // Local-first (§10.3): the whole state lives in this browser, nowhere else.
 // This data — grief anniversaries, worries, repair notes — never leaves the device.
@@ -37,6 +38,8 @@ export type Action =
   | { type: 'reset_demo' }
   | { type: 'clear_all' }
   | { type: 'load_state'; state: AppState }
+  /** Reconcile with a state written elsewhere (another tab) — merged, not replaced. */
+  | { type: 'merge_state'; state: AppState }
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -46,6 +49,7 @@ function reducer(state: AppState, action: Action): AppState {
         b: k.otherId,
         context: k.context || 'Know each other',
         introducedByUser: false,
+        createdAt: Date.now(),
       }))
       return { ...state, people: [...state.people, action.person], edges: [...state.edges, ...edges] }
     }
@@ -69,7 +73,9 @@ function reducer(state: AppState, action: Action): AppState {
     case 'update_person':
       return {
         ...state,
-        people: state.people.map((p) => (p.id === action.person.id ? action.person : p)),
+        people: state.people.map((p) =>
+          p.id === action.person.id ? { ...action.person, updatedAt: Date.now() } : p,
+        ),
       }
     case 'remove_person':
       return {
@@ -83,6 +89,10 @@ function reducer(state: AppState, action: Action): AppState {
           }))
           .filter((a) => a.participants.length > 0),
         reminders: state.reminders.filter((r) => r.personId !== action.personId),
+        tombstones: {
+          ...state.tombstones,
+          people: { ...state.tombstones.people, [action.personId]: Date.now() },
+        },
       }
     case 'move_ring':
       return {
@@ -93,6 +103,7 @@ function reducer(state: AppState, action: Action): AppState {
                 ...p,
                 ring: action.ring,
                 ringHistory: [...p.ringHistory, { ring: action.ring, at: Date.now() }],
+                updatedAt: Date.now(),
               }
             : p,
         ),
@@ -104,14 +115,21 @@ function reducer(state: AppState, action: Action): AppState {
         // Reaching out answers the flag — clear it for everyone involved.
         people: state.people.map((p) =>
           p.flaggedAt && action.action.participants.includes(p.id)
-            ? { ...p, flaggedAt: undefined }
+            ? { ...p, flaggedAt: undefined, updatedAt: Date.now() }
             : p,
         ),
       }
     case 'add_event':
-      return { ...state, events: [...state.events, action.event] }
+      return { ...state, events: [...state.events, { ...action.event, updatedAt: Date.now() }] }
     case 'remove_event':
-      return { ...state, events: state.events.filter((e) => e.id !== action.eventId) }
+      return {
+        ...state,
+        events: state.events.filter((e) => e.id !== action.eventId),
+        tombstones: {
+          ...state.tombstones,
+          events: { ...state.tombstones.events, [action.eventId]: Date.now() },
+        },
+      }
     case 'toggle_event_invite':
       return {
         ...state,
@@ -122,6 +140,7 @@ function reducer(state: AppState, action: Action): AppState {
                 invited: e.invited.includes(action.personId)
                   ? e.invited.filter((id) => id !== action.personId)
                   : [...e.invited, action.personId],
+                updatedAt: Date.now(),
               }
             : e,
         ),
@@ -135,7 +154,7 @@ function reducer(state: AppState, action: Action): AppState {
       if (action.status === 'landed' && !edges.some((e) => pairKey(e.a, e.b) === key)) {
         edges = [
           ...edges,
-          { a: action.a, b: action.b, context: action.context || 'You introduced them', introducedByUser: true },
+          { a: action.a, b: action.b, context: action.context || 'You introduced them', introducedByUser: true, createdAt: Date.now() },
         ]
       }
       return {
@@ -148,23 +167,43 @@ function reducer(state: AppState, action: Action): AppState {
       const key = pairKey(action.edge.a, action.edge.b)
       if (action.edge.a === action.edge.b) return state
       if (state.edges.some((e) => pairKey(e.a, e.b) === key)) return state
-      return { ...state, edges: [...state.edges, action.edge] }
+      return {
+        ...state,
+        edges: [...state.edges, { ...action.edge, createdAt: action.edge.createdAt ?? Date.now() }],
+      }
     }
     case 'remove_edge': {
       const key = pairKey(action.a, action.b)
-      return { ...state, edges: state.edges.filter((e) => pairKey(e.a, e.b) !== key) }
+      return {
+        ...state,
+        edges: state.edges.filter((e) => pairKey(e.a, e.b) !== key),
+        tombstones: {
+          ...state.tombstones,
+          edges: { ...state.tombstones.edges, [key]: Date.now() },
+        },
+      }
     }
     case 'add_reminder':
-      return { ...state, reminders: [...state.reminders, action.reminder] }
+      return {
+        ...state,
+        reminders: [...state.reminders, { ...action.reminder, updatedAt: Date.now() }],
+      }
     case 'set_reminder_done':
       return {
         ...state,
         reminders: state.reminders.map((r) =>
-          r.id === action.reminderId ? { ...r, done: action.done } : r,
+          r.id === action.reminderId ? { ...r, done: action.done, updatedAt: Date.now() } : r,
         ),
       }
     case 'remove_reminder':
-      return { ...state, reminders: state.reminders.filter((r) => r.id !== action.reminderId) }
+      return {
+        ...state,
+        reminders: state.reminders.filter((r) => r.id !== action.reminderId),
+        tombstones: {
+          ...state.tombstones,
+          reminders: { ...state.tombstones.reminders, [action.reminderId]: Date.now() },
+        },
+      }
     case 'dismiss_proposal':
       return {
         ...state,
@@ -175,18 +214,52 @@ function reducer(state: AppState, action: Action): AppState {
       }
     case 'reset_demo':
       return buildSeedState()
-    case 'clear_all':
-      return { people: [], edges: [], actions: [], events: [], sparkStates: [], dismissedProposals: [], reminders: [] }
+    case 'clear_all': {
+      // Starting fresh is a real deletion: everything currently in the sky is
+      // tombstoned so a synced copy elsewhere doesn't resurrect it on merge.
+      const now = Date.now()
+      const stamp = (ids: string[], prior: Record<string, number>) => {
+        const out = { ...prior }
+        for (const id of ids) out[id] = now
+        return out
+      }
+      return {
+        people: [],
+        edges: [],
+        actions: [],
+        events: [],
+        sparkStates: [],
+        dismissedProposals: [],
+        reminders: [],
+        tombstones: {
+          people: stamp(state.people.map((p) => p.id), state.tombstones.people),
+          edges: stamp(state.edges.map((e) => pairKey(e.a, e.b)), state.tombstones.edges),
+          events: stamp(state.events.map((e) => e.id), state.tombstones.events),
+          reminders: stamp(state.reminders.map((r) => r.id), state.tombstones.reminders),
+        },
+      }
+    }
     case 'load_state':
-      // Wholesale replacement — used when a decrypted sky arrives from sync.
+      // Wholesale replacement — used when sync adopts a reconciled sky.
       return normalizeState(action.state)
+    case 'merge_state': {
+      // Another tab wrote localStorage. Same mode (real↔real, demo↔demo):
+      // reconcile. Mode switch (the other tab reset to demo / started fresh):
+      // adopt theirs — that was a deliberate act, not a divergence.
+      // Returning the SAME reference when nothing changed is load-bearing:
+      // it stops two tabs from ping-ponging storage events forever.
+      const incoming = normalizeState(action.state)
+      const next =
+        isDemoState(incoming) !== isDemoState(state) ? incoming : mergeStates(state, incoming)
+      return stableStringify(next) === stableStringify(state) ? state : next
+    }
     default:
       return state
   }
 }
 
 /** Fill fields added after a state was saved, so old local/cloud skies keep working. */
-function normalizeState(s: AppState): AppState {
+export function normalizeState(s: AppState): AppState {
   return {
     people: (s.people ?? []).map((p) => ({
       ...p,
@@ -210,6 +283,12 @@ function normalizeState(s: AppState): AppState {
     sparkStates: s.sparkStates ?? [],
     dismissedProposals: s.dismissedProposals ?? [],
     reminders: s.reminders ?? [],
+    tombstones: {
+      people: s.tombstones?.people ?? {},
+      edges: s.tombstones?.edges ?? {},
+      events: s.tombstones?.events ?? {},
+      reminders: s.tombstones?.reminders ?? {},
+    },
   }
 }
 
@@ -237,6 +316,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       // storage full or unavailable — the session still works in memory
     }
   }, [state])
+  // A second tab writing the same sky used to silently overwrite this one's
+  // work (each tab held its own full snapshot). Reconcile instead: the
+  // 'storage' event only fires in OTHER tabs, never the writer.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== STORAGE_KEY || !e.newValue) return
+      try {
+        const incoming = JSON.parse(e.newValue) as AppState
+        if (Array.isArray(incoming.people)) dispatch({ type: 'merge_state', state: incoming })
+      } catch {
+        // unparseable write — ignore, this tab's copy remains authoritative
+      }
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
   return <StoreContext.Provider value={{ state, dispatch }}>{children}</StoreContext.Provider>
 }
 
