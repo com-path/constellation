@@ -1470,3 +1470,272 @@ textarea.braindump {
   flex-wrap: wrap;
   gap: 0.35rem;
 }
+
+/* ===========================================================================
+   Mobile layout — the same sky, recomposed for a hand-held screen.
+   Desktop keeps its floating-panel composition; below 720px the header
+   stacks (scrollable tab rail), panels and modals become bottom sheets,
+   and the person page goes full-screen.
+   =========================================================================== */
+
+@supports (height: 100dvh) {
+  html,
+  body,
+  #root {
+    height: 100dvh; /* tracks the real visible height under mobile browser toolbars */
+  }
+}
+
+@media (pointer: coarse) {
+  .chip {
+    padding: 0.4rem 0.85rem;
+  }
+
+  .tab {
+    padding: 0.45rem 0.85rem;
+  }
+
+  .link.small {
+    padding: 0.3rem 0.1rem;
+  }
+}
+
+@media (max-width: 720px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  /* ——— Header: title row, actions row, then an edge-to-edge tab rail ——— */
+  .top-bar {
+    gap: 0.35rem 0.75rem;
+    padding: 0.55rem 0.85rem 0.1rem;
+  }
+
+  .top-bar h1 {
+    font-size: 1.1rem;
+  }
+
+  .tagline {
+    display: none;
+  }
+
+  .view-tabs {
+    order: 4;
+    flex-basis: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -0.85rem;
+    padding: 0.1rem 0.85rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .view-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Fade the rail's right edge — a hint that more views scroll into reach. */
+  .view-tabs {
+    -webkit-mask-image: linear-gradient(90deg, #000 86%, transparent);
+    mask-image: linear-gradient(90deg, #000 86%, transparent);
+  }
+
+  .tab {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .view-hint {
+    padding: 0.15rem 0.85rem;
+  }
+
+  .capacity-note {
+    padding: 0 0.85rem 0.2rem;
+  }
+
+  /* 16px inputs stop iOS Safari from zooming the page on focus */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  /* ——— Side panels (attention, events, sparks, legend) → bottom sheets ——— */
+  .side-panel {
+    top: auto;
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    width: auto;
+    max-height: 52%;
+  }
+
+  .slim-panel {
+    max-height: 45%;
+  }
+
+  /* ——— Person page: full screen, one column ——— */
+  .person-scrim {
+    padding: 0;
+  }
+
+  .person-page {
+    position: relative;
+    width: 100%;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    padding: 0.9rem 1rem 5rem;
+  }
+
+  /* Pin the close button beside the name instead of mid-flow. */
+  .person-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.6rem;
+    margin: 0;
+  }
+
+  .person-done {
+    right: 1rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+
+  /* ——— Modals become bottom sheets with full-width actions ——— */
+  .modal-backdrop {
+    align-items: flex-end;
+  }
+
+  .modal,
+  .modal-wide {
+    width: 100vw;
+    max-height: 88vh;
+    max-height: 88dvh;
+    border-radius: 16px 16px 0 0;
+    border-bottom: none;
+  }
+
+  .modal-header {
+    position: sticky;
+    top: 0;
+    background: #10162e;
+    padding: 0.8rem 1rem 0.2rem;
+    z-index: 2;
+  }
+
+  .modal-body {
+    padding: 0.3rem 1rem calc(1.1rem + env(safe-area-inset-bottom));
+  }
+
+  .modal-footer {
+    flex-wrap: wrap;
+  }
+
+  .modal-footer .btn {
+    flex: 1 1 auto;
+    padding: 0.55rem 0.9rem;
+  }
+
+  .type-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ring-option {
+    padding: 0.55rem 0.7rem;
+  }
+
+  /* ——— Setup journey: review rows stack into two lines ——— */
+  .stage-list {
+    max-height: 42vh;
+  }
+
+  .stage-list li {
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid rgba(120, 140, 190, 0.12);
+  }
+
+  .stage-name {
+    flex: 1 1 calc(100% - 2.2rem);
+    min-width: 0;
+  }
+
+  .stage-context {
+    flex: 1 1 52%;
+    min-width: 0;
+    margin-left: 1.55rem;
+  }
+
+  .stage-list .ring-select {
+    flex: 1 1 34%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .stage-tags {
+    margin-left: 1.55rem;
+  }
+
+  .setup-sources {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .setup-sources .btn,
+  .setup-sources .file-btn {
+    text-align: center;
+  }
+
+  /* ——— Footer: stacked, wrapping links, safe-area padding ——— */
+  .foot {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    padding: 0.4rem 0.85rem calc(0.5rem + env(safe-area-inset-bottom));
+  }
+
+  .foot > .muted {
+    font-size: 0.72rem;
+  }
+
+  .foot-links {
+    flex-wrap: wrap;
+    gap: 0.35rem 1rem;
+  }
+
+  /* ——— Cards floating over the sky ——— */
+  .tour-card {
+    bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  }
+
+  .nudge-card {
+    left: 1rem;
+    right: 1rem;
+    width: auto;
+  }
+
+  /* ——— Catalogue: tighter frame, table scrolls inside its own container ——— */
+  .catalogue {
+    padding: 0.6rem;
+  }
+
+  .catalogue-controls {
+    flex-wrap: wrap;
+  }
+
+  /* ——— Landing ——— */
+  .landing-inner {
+    padding: 1.5rem 1.15rem 2.5rem;
+  }
+
+  .landing-hero {
+    padding-top: 1rem;
+  }
+
+  /* ——— Census ——— */
+  .census-question {
+    font-size: 1.15rem;
+  }
+}
