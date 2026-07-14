@@ -59,8 +59,12 @@ function AppInner() {
   const [tourOpen, setTourOpen] = useState(
     () => localStorage.getItem(TOUR_DONE_KEY) !== 'done',
   )
-  const [landingOpen, setLandingOpen] = useState(
-    () => localStorage.getItem(LANDING_DONE_KEY) !== 'done',
+  // The front door greets every page load — the link lands on the ethos, and
+  // you step into the sky from there. Having been here before only changes
+  // the copy (and skips the tour, which keeps its own key).
+  const [landingOpen, setLandingOpen] = useState(true)
+  const [returningVisitor] = useState(
+    () => localStorage.getItem(LANDING_DONE_KEY) === 'done',
   )
 
   // A signed-in-but-locked sky needs the passphrase before sync resumes —
@@ -290,13 +294,16 @@ function AppInner() {
       {accountOpen && <AccountPanel onClose={() => setAccountOpen(false)} />}
       {landingOpen && (
         <Landing
+          returning={returningVisitor}
           onEnter={() => {
             localStorage.setItem(LANDING_DONE_KEY, 'done')
             setLandingOpen(false)
           }}
         />
       )}
-      {tourOpen && (
+      {/* The tour waits behind the front door — mounting it under the landing
+          overlay would steal keyboard focus to buttons nobody can see. */}
+      {tourOpen && !landingOpen && (
         <Tour
           ctx={{ setView, setSelectedId, setMirrorOpen }}
           onFinish={(startFresh) => {

@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
 
-// The front door. A first-time visitor should leave this page knowing what
-// Constellation believes, what it does, and wanting to step inside. The tour
-// takes over from there, on the lived-in example sky.
+// The front door. Every visit lands here first: a first-time visitor should
+// leave this page knowing what Constellation believes, what it does, and
+// wanting to step inside (the tour takes over from there, on the lived-in
+// example sky); a returning one gets a quieter welcome back to their own sky.
 
 export const LANDING_DONE_KEY = 'constellation-landing-v1'
 
@@ -14,7 +15,13 @@ interface Star {
   duration: number
 }
 
-export function Landing({ onEnter }: { onEnter: () => void }) {
+export function Landing({
+  onEnter,
+  returning = false,
+}: {
+  onEnter: () => void
+  returning?: boolean
+}) {
   const stars = useMemo<Star[]>(
     () =>
       Array.from({ length: 90 }, () => ({
@@ -56,11 +63,13 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
             next to tend those bonds. You sit at the centre. Everyone else orbits at the
             distance of intimacy, joined by threads of shared history.
           </p>
-          <button className="btn landing-cta" onClick={onEnter}>
-            ✦ Step into the sky
+          <button className="btn landing-cta" onClick={onEnter} autoFocus>
+            {returning ? '✦ Step into your sky' : '✦ Step into the sky'}
           </button>
           <p className="hint">
-            You'll land in a lived-in example first — explore it, then start your own.
+            {returning
+              ? 'Your sky is where you left it — everything stays on this device.'
+              : "You'll land in a lived-in example first — explore it, then start your own."}
           </p>
         </header>
 
@@ -142,7 +151,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
             friendship does.
           </p>
           <button className="btn landing-cta" onClick={onEnter}>
-            ✦ Begin
+            {returning ? '✦ Return to your sky' : '✦ Begin'}
           </button>
         </section>
 
