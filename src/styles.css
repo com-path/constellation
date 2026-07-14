@@ -1445,3 +1445,28 @@ textarea.braindump {
   color: var(--gold);
   border-color: rgba(201, 176, 120, 0.55);
 }
+
+.dump-section {
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  margin: 0.75rem 0;
+}
+
+.dump-section > h4 {
+  margin-top: 0;
+}
+
+.circle-add-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.circle-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}

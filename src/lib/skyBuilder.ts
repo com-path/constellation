@@ -144,6 +144,20 @@ export function parseBrainDump(text: string): StagedPerson[] {
 }
 
 // ---------------------------------------------------------------------------
+// Circles — the other half of the brain dump: name a context once, then list
+// everyone you met there. All of them share the context, and the caller
+// pre-threads the group (a circle knows each other — that's what makes it one).
+// ---------------------------------------------------------------------------
+
+export function stageCircle(context: string, namesText: string): StagedPerson[] {
+  return namesText
+    .split(/[,\n]|\s*&\s*|\s+and\s+/i)
+    .map((n) => n.trim().replace(/^[-*•]\s+/, ''))
+    .filter(Boolean)
+    .map((name) => staged(name, 'braindump', { context: context.trim() }))
+}
+
+// ---------------------------------------------------------------------------
 // vCard (.vcf) files — the export format of Apple/Google/Outlook contacts.
 // Parsed entirely in the browser; only names and birthdays are read.
 // ---------------------------------------------------------------------------

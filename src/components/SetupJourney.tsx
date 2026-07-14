@@ -9,6 +9,7 @@ import {
   parseBrainDump,
   parseVcf,
   pickContacts,
+  stageCircle,
   type StagedPerson,
 } from '../lib/skyBuilder'
 import { remainingCensusPrompts } from '../lib/census'
@@ -60,6 +61,24 @@ export function SetupJourney({
   const parseDump = () => {
     addStaged(parseBrainDump(dump))
     setDump('')
+  }
+
+  // Circles: one context, many people — staged together and pre-threaded,
+  // because a circle knowing each other is what makes it a circle.
+  const [circleName, setCircleName] = useState('')
+  const [circleNames, setCircleNames] = useState('')
+  const [addedCircles, setAddedCircles] = useState<Array<{ name: string; count: number }>>([])
+  const circleReady = circleName.trim() !== '' && circleNames.trim() !== ''
+
+  const addCircle = () => {
+    if (!circleReady) return
+    const items = stageCircle(circleName, circleNames)
+    if (items.length === 0) return
+    addStaged(items)
+    setThreadOn((cur) => new Set([...cur, circleName.trim()]))
+    setAddedCircles((cur) => [...cur, { name: circleName.trim(), count: items.length }])
+    setCircleName('')
+    setCircleNames('')
   }
 
   const included = stagedList.filter((s) => s.include && s.name.trim())
@@ -156,23 +175,68 @@ export function SetupJourney({
 
       {step === 'braindump' && (
         <>
-          <h4>Brain-dump the people on your mind</h4>
-          <p className="hint">
-            One person per line, as roughly as you like. A dash adds detail: context first,
-            then anything the sky should know — <em>ring words</em> ("ride or die", "good
-            friend", "promising"), <em>loves …</em>, <em>birthday MM-DD</em>. It's sorted
-            transparently — no AI, and you review every line.
-          </p>
-          <textarea
-            className="wide braindump"
-            rows={8}
-            autoFocus
-            placeholder={
-              'Sofia — work, close, loves ceramics\nMarco & Dena — the supper club\nPriya — university, ride or die, birthday 06-21\nBen'
-            }
-            value={dump}
-            onChange={(e) => setDump(e.target.value)}
-          />
+          <div className="dump-section">
+            <h4>Whole circles at once</h4>
+            <p className="hint">
+              Name a context — the job, the club, the group chat — then everyone you met
+              there. They all get that context, and since a circle knows each other, the
+              threads between them come pre-drawn (you can untick that at review).
+            </p>
+            <input
+              className="wide"
+              placeholder="The circle — e.g. The Tuesday climbing crew"
+              value={circleName}
+              list="setup-contexts-dump"
+              onChange={(e) => setCircleName(e.target.value)}
+            />
+            <datalist id="setup-contexts-dump">
+              {existingContexts.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
+            <textarea
+              className="wide"
+              rows={2}
+              placeholder="Everyone you met there — Rosa, Idris, Femi, June…"
+              value={circleNames}
+              onChange={(e) => setCircleNames(e.target.value)}
+            />
+            <div className="circle-add-row">
+              <button className="btn small" onClick={addCircle} disabled={!circleReady}>
+                Add this circle
+              </button>
+              {addedCircles.length > 0 && (
+                <span className="circle-chips">
+                  {addedCircles.map((c, i) => (
+                    <span key={i} className="chip-static">
+                      {c.name} · {c.count}
+                    </span>
+                  ))}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="dump-section">
+            <h4>One person at a time</h4>
+            <p className="hint">
+              One per line, as roughly as you like. A dash adds detail: context first, then
+              anything the sky should know — <em>ring words</em> ("ride or die", "good
+              friend", "promising"), <em>loves …</em>, <em>birthday MM-DD</em>. It's sorted
+              transparently — no AI, and you review every line.
+            </p>
+            <textarea
+              className="wide braindump"
+              rows={6}
+              autoFocus
+              placeholder={
+                'Sofia — work, close, loves ceramics\nMarco & Dena — the supper club\nPriya — university, ride or die, birthday 06-21\nBen'
+              }
+              value={dump}
+              onChange={(e) => setDump(e.target.value)}
+            />
+          </div>
+
           {stagedList.length > 0 && (
             <p className="setup-count">
               ✦ {stagedList.length} name{stagedList.length === 1 ? '' : 's'} waiting for review.
@@ -188,6 +252,7 @@ export function SetupJourney({
             <button
               className="btn"
               onClick={() => {
+                if (circleReady) addCircle()
                 if (dump.trim()) parseDump()
                 setStep('review')
               }}
