@@ -68,11 +68,13 @@ function AppInner() {
   )
 
   // A signed-in-but-locked sky needs the passphrase before sync resumes —
-  // surface the panel once rather than leaving a silent lock.
+  // surface the panel once rather than leaving a silent lock. Waiting for the
+  // landing matters: the landing overlay covers modals, so opening the panel
+  // under it would hide the prompt (and steal focus into an invisible field).
   const sync = useSync()
   useEffect(() => {
-    if (sync.status === 'locked') setAccountOpen(true)
-  }, [sync.status])
+    if (sync.status === 'locked' && !landingOpen) setAccountOpen(true)
+  }, [sync.status, landingOpen])
 
   const graphInput: GraphInput = useMemo(
     () => ({
@@ -266,7 +268,11 @@ function AppInner() {
           <button
             className="link small"
             onClick={() => {
-              if (window.confirm('Start with an empty sky? Your current constellation will be erased from this browser.')) {
+              const syncing = sync.status === 'synced' || sync.status === 'syncing'
+              const msg = syncing
+                ? 'Start with an empty sky? Your current constellation will be erased — and since you’re syncing, that clears it from your account everywhere, not just this browser.'
+                : 'Start with an empty sky? Your current constellation will be erased from this browser.'
+              if (window.confirm(msg)) {
                 dispatch({ type: 'clear_all' })
                 setSelectedId(null)
                 setSetupOpen(true)

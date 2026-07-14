@@ -9,6 +9,7 @@ export function AccountPanel({ onClose }: { onClose: () => void }) {
   const sync = useSync()
   const [email, setEmail] = useState('')
   const [linkSent, setLinkSent] = useState(false)
+  const [code, setCode] = useState('')
   const [passphrase, setPassphrase] = useState('')
   const [confirm, setConfirm] = useState('')
   const [busy, setBusy] = useState(false)
@@ -22,6 +23,18 @@ export function AccountPanel({ onClose }: { onClose: () => void }) {
     try {
       await sync.sendMagicLink(email.trim())
       setLinkSent(true)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const submitCode = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      await sync.verifyCode(email.trim(), code)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -58,10 +71,35 @@ export function AccountPanel({ onClose }: { onClose: () => void }) {
 
       {sync.status === 'signed_out' &&
         (linkSent ? (
-          <p className="panel-lede">
-            Check your email — the sign-in link brings you straight back here. You can close
-            this window.
-          </p>
+          <>
+            <p className="panel-lede">
+              Check your email. The sign-in link brings you straight back here — but if the
+              link opens somewhere else (phone email apps love doing that), type the 6-digit
+              code from the same email below instead. That signs in <em>this</em> browser.
+            </p>
+            <div className="add-row">
+              <input
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="6-digit code"
+                value={code}
+                autoFocus
+                onChange={(e) => setCode(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && code.trim().length >= 6 && submitCode()}
+              />
+              <button
+                className="btn small"
+                onClick={submitCode}
+                disabled={busy || code.trim().length < 6}
+              >
+                {busy ? 'Checking…' : 'Sign in with code'}
+              </button>
+            </div>
+            <p className="hint">
+              No code in the email? Your Supabase email template may only include the link —
+              SETUP.md shows the one-line template change that adds the code.
+            </p>
+          </>
         ) : (
           <>
             <p className="panel-lede">
@@ -156,10 +194,10 @@ export function AccountPanel({ onClose }: { onClose: () => void }) {
               ? 'Syncing…'
               : sync.status === 'synced'
                 ? 'Your sky is up to date, end-to-end encrypted.'
-                : 'Sync hit a problem — your sky is safe on this device and will retry on the next change.'}
+                : 'Sync hit a problem — nothing is uploading or downloading right now. Your sky is safe on this device; retry below.'}
           </p>
           {sync.status === 'error' && sync.lastError && (
-            <p className="hint">Details: {sync.lastError}</p>
+            <p className="sync-error">Details: {sync.lastError}</p>
           )}
           <p className="hint">
             The passphrase is asked for once per browser session. Signing out keeps a copy of
@@ -175,6 +213,11 @@ export function AccountPanel({ onClose }: { onClose: () => void }) {
             >
               Sign out
             </button>
+            {sync.status === 'error' && (
+              <button className="btn" onClick={() => sync.retry()}>
+                Retry now
+              </button>
+            )}
           </div>
         </>
       )}

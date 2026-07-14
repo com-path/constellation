@@ -62,6 +62,8 @@ export interface Person {
   howMet: string
   location?: string
   occupation?: string
+  /** Last local edit (epoch ms) — newest-wins when two devices edited the same star. */
+  updatedAt?: number
   details: {
     rituals: string[] // the annual thing, the Sunday call
     loves: string[] // their tea, their band, their bookshop
@@ -97,6 +99,8 @@ export interface Reminder {
   date: string
   note: string
   done: boolean
+  /** Last local edit (epoch ms) — newest-wins across devices. */
+  updatedAt?: number
 }
 
 /** Starting points for "good events for them" — free text is equally welcome. */
@@ -118,6 +122,8 @@ export interface Edge {
   b: string
   context: string // how they know each other
   introducedByUser: boolean // the payoff of Sparks
+  /** When the thread was drawn (epoch ms) — lets a re-drawn thread outlive an old deletion. */
+  createdAt?: number
 }
 
 export interface ActionLog {
@@ -148,6 +154,8 @@ export interface EventItem {
   tags: string[]
   /** People you've added to this event — a scheduled engagement for each of them. */
   invited: string[]
+  /** Last local edit (epoch ms) — newest-wins across devices. */
+  updatedAt?: number
 }
 
 export type SparkStatus = 'suggested' | 'dismissed' | 'introduced' | 'landed'
@@ -164,6 +172,20 @@ export interface DismissedProposal {
   at: number
 }
 
+/** Deletions, remembered. Without these, a two-device merge would resurrect
+ *  everything one device removed. Keyed by entity id (edges by pairKey),
+ *  value = when it was deleted (epoch ms). Pruned after ~6 months. */
+export interface Tombstones {
+  people: Record<string, number>
+  edges: Record<string, number>
+  events: Record<string, number>
+  reminders: Record<string, number>
+}
+
+export function emptyTombstones(): Tombstones {
+  return { people: {}, edges: {}, events: {}, reminders: {} }
+}
+
 export interface AppState {
   people: Person[]
   edges: Edge[]
@@ -172,6 +194,7 @@ export interface AppState {
   sparkStates: SparkState[]
   dismissedProposals: DismissedProposal[]
   reminders: Reminder[]
+  tombstones: Tombstones
 }
 
 export type ViewMode = 'closeness' | 'network' | 'events' | 'attention' | 'sparks' | 'catalogue'

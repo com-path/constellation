@@ -1,5 +1,5 @@
 import type { ActionLog, ActionType, AppState, Edge, Modality, Person, Ring } from '../types'
-import { uid } from '../types'
+import { emptyTombstones, uid } from '../types'
 
 // Demo constellation: ~28 people, 4 rings + outer field, clustered edges (spec §12 Phase 1).
 // Everything here is fake, but shaped like real life: contexts overlap, some threads
@@ -603,5 +603,6 @@ export function buildSeedState(): AppState {
         done: false,
       },
     ],
+    tombstones: emptyTombstones(),
   }
 }
