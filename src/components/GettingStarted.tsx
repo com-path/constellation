@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { AppState } from '../types'
 import { useStore } from '../store/store'
+import { remainingCensusPrompts } from '../lib/census'
 
 // Post-tour nudges: once someone is building their own sky, suggest ONE next
 // small step at a time, detected from their data. Invitations, not a checklist —
@@ -14,17 +15,17 @@ export interface Nudge {
   title: string
   body: string
   actionLabel: string
-  action: 'add_person' | 'log_moment' | 'open_person'
+  action: 'add_person' | 'log_moment' | 'open_person' | 'open_setup' | 'open_census'
 }
 
 export function nextNudge(state: AppState): Nudge | null {
   if (state.people.length === 0) {
     return {
       id: 'first-star',
-      title: 'Place your first star',
-      body: 'Someone you’d call first with big news is a good place to begin.',
-      actionLabel: 'New star',
-      action: 'add_person',
+      title: 'Populate your sky',
+      body: 'Bring in names from your contacts or a quick brain-dump — you review everything before it lands. Or simply place one star: someone you’d call first with big news.',
+      actionLabel: 'Set up my sky',
+      action: 'open_setup',
     }
   }
   if (state.people.length < 4) {
@@ -72,6 +73,17 @@ export function nextNudge(state: AppState): Nudge | null {
       action: 'open_person',
     }
   }
+  // The basics exist — from here, the census keeps offering one creative
+  // question at a time until the deck runs dry. Skippable like everything else.
+  if (remainingCensusPrompts().length > 0) {
+    return {
+      id: 'census',
+      title: 'A question about your sky',
+      body: 'The sky census asks about your communities and the memories you love — a meal you’ll never forget, the hardest you’ve laughed. Each answer adds warmth to a star.',
+      actionLabel: 'Draw a card',
+      action: 'open_census',
+    }
+  }
   return null
 }
 
@@ -79,10 +91,14 @@ export function GettingStarted({
   onAddPerson,
   onLogMoment,
   onOpenPerson,
+  onOpenSetup,
+  onOpenCensus,
 }: {
   onAddPerson: () => void
   onLogMoment: () => void
   onOpenPerson: (id: string) => void
+  onOpenSetup: () => void
+  onOpenCensus: () => void
 }) {
   const { state } = useStore()
   const [hiddenThisSession, setHiddenThisSession] = useState(
@@ -98,6 +114,8 @@ export function GettingStarted({
   const act = () => {
     if (nudge.action === 'add_person') onAddPerson()
     else if (nudge.action === 'log_moment') onLogMoment()
+    else if (nudge.action === 'open_setup') onOpenSetup()
+    else if (nudge.action === 'open_census') onOpenCensus()
     else if (state.people.length > 0) onOpenPerson(state.people[0].id)
   }
 

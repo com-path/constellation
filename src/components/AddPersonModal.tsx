@@ -5,7 +5,8 @@ import { useStore } from '../store/store'
 import { Modal } from './ui'
 
 // Onboarding a new friend (§8.3): short, warm, under a minute, extendable later.
-// Deliberate hand-placement, not bulk import — sparseness is a feature.
+// Deliberate hand-placement of one star; the bulk on-ramps (SetupJourney, the
+// sky census) stage-and-review instead — sparseness stays a feature either way.
 
 const RING_OPTIONS: Ring[] = [4, 3, 2, 1, 'outer']
 

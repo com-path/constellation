@@ -16,6 +16,8 @@ import { PersonProfile } from './components/PersonProfile'
 import { LogActionModal } from './components/LogActionModal'
 import { AddPersonModal } from './components/AddPersonModal'
 import { QuickNoteModal } from './components/QuickNoteModal'
+import { SetupJourney } from './components/SetupJourney'
+import { SkyCensus } from './components/SkyCensus'
 import { SparksPanel } from './components/SparksPanel'
 import { EventsPanel } from './components/EventsPanel'
 import { AttentionPanel } from './components/AttentionPanel'
@@ -52,11 +54,17 @@ function AppInner() {
     setSelectedId(id)
   }, [])
   const [accountOpen, setAccountOpen] = useState(false)
+  const [setupOpen, setSetupOpen] = useState(false)
+  const [censusOpen, setCensusOpen] = useState(false)
   const [tourOpen, setTourOpen] = useState(
     () => localStorage.getItem(TOUR_DONE_KEY) !== 'done',
   )
-  const [landingOpen, setLandingOpen] = useState(
-    () => localStorage.getItem(LANDING_DONE_KEY) !== 'done',
+  // The front door greets every page load — the link lands on the ethos, and
+  // you step into the sky from there. Having been here before only changes
+  // the copy (and skips the tour, which keeps its own key).
+  const [landingOpen, setLandingOpen] = useState(true)
+  const [returningVisitor] = useState(
+    () => localStorage.getItem(LANDING_DONE_KEY) === 'done',
   )
 
   // A signed-in-but-locked sky needs the passphrase before sync resumes —
@@ -226,6 +234,8 @@ function AppInner() {
             onAddPerson={() => setAddingPerson(true)}
             onLogMoment={() => setLogWith([])}
             onOpenPerson={setSelectedId}
+            onOpenSetup={() => setSetupOpen(true)}
+            onOpenCensus={() => setCensusOpen(true)}
           />
         )}
       </main>
@@ -244,6 +254,12 @@ function AppInner() {
           <button className="link small" onClick={() => setLandingOpen(true)}>
             about
           </button>
+          <button className="link small" onClick={() => setSetupOpen(true)}>
+            populate sky
+          </button>
+          <button className="link small" onClick={() => setCensusOpen(true)}>
+            sky census
+          </button>
           <button className="link small" onClick={() => dispatch({ type: 'reset_demo' })}>
             demo sky
           </button>
@@ -253,6 +269,7 @@ function AppInner() {
               if (window.confirm('Start with an empty sky? Your current constellation will be erased from this browser.')) {
                 dispatch({ type: 'clear_all' })
                 setSelectedId(null)
+                setSetupOpen(true)
               }
             }}
           >
@@ -266,17 +283,27 @@ function AppInner() {
       )}
       {addingPerson && <AddPersonModal onClose={() => setAddingPerson(false)} />}
       {notePerson && <QuickNoteModal person={notePerson} onClose={() => setNoteFor(null)} />}
+      {setupOpen && (
+        <SetupJourney
+          onClose={() => setSetupOpen(false)}
+          onOpenCensus={() => setCensusOpen(true)}
+        />
+      )}
+      {censusOpen && <SkyCensus onClose={() => setCensusOpen(false)} />}
       {mirrorOpen && <EffortMirror onClose={() => setMirrorOpen(false)} />}
       {accountOpen && <AccountPanel onClose={() => setAccountOpen(false)} />}
       {landingOpen && (
         <Landing
+          returning={returningVisitor}
           onEnter={() => {
             localStorage.setItem(LANDING_DONE_KEY, 'done')
             setLandingOpen(false)
           }}
         />
       )}
-      {tourOpen && (
+      {/* The tour waits behind the front door — mounting it under the landing
+          overlay would steal keyboard focus to buttons nobody can see. */}
+      {tourOpen && !landingOpen && (
         <Tour
           ctx={{ setView, setSelectedId, setMirrorOpen }}
           onFinish={(startFresh) => {
@@ -287,6 +314,9 @@ function AppInner() {
               dispatch({ type: 'clear_all' })
               setSelectedId(null)
               setView('closeness')
+              // The empty sky doesn't have to be filled star by star —
+              // offer the setup journey straight away.
+              setSetupOpen(true)
             }
           }}
         />
