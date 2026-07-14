@@ -16,6 +16,8 @@ import { PersonProfile } from './components/PersonProfile'
 import { LogActionModal } from './components/LogActionModal'
 import { AddPersonModal } from './components/AddPersonModal'
 import { QuickNoteModal } from './components/QuickNoteModal'
+import { SetupJourney } from './components/SetupJourney'
+import { SkyCensus } from './components/SkyCensus'
 import { SparksPanel } from './components/SparksPanel'
 import { EventsPanel } from './components/EventsPanel'
 import { AttentionPanel } from './components/AttentionPanel'
@@ -52,6 +54,8 @@ function AppInner() {
     setSelectedId(id)
   }, [])
   const [accountOpen, setAccountOpen] = useState(false)
+  const [setupOpen, setSetupOpen] = useState(false)
+  const [censusOpen, setCensusOpen] = useState(false)
   const [tourOpen, setTourOpen] = useState(
     () => localStorage.getItem(TOUR_DONE_KEY) !== 'done',
   )
@@ -226,6 +230,8 @@ function AppInner() {
             onAddPerson={() => setAddingPerson(true)}
             onLogMoment={() => setLogWith([])}
             onOpenPerson={setSelectedId}
+            onOpenSetup={() => setSetupOpen(true)}
+            onOpenCensus={() => setCensusOpen(true)}
           />
         )}
       </main>
@@ -244,6 +250,12 @@ function AppInner() {
           <button className="link small" onClick={() => setLandingOpen(true)}>
             about
           </button>
+          <button className="link small" onClick={() => setSetupOpen(true)}>
+            populate sky
+          </button>
+          <button className="link small" onClick={() => setCensusOpen(true)}>
+            sky census
+          </button>
           <button className="link small" onClick={() => dispatch({ type: 'reset_demo' })}>
             demo sky
           </button>
@@ -253,6 +265,7 @@ function AppInner() {
               if (window.confirm('Start with an empty sky? Your current constellation will be erased from this browser.')) {
                 dispatch({ type: 'clear_all' })
                 setSelectedId(null)
+                setSetupOpen(true)
               }
             }}
           >
@@ -266,6 +279,13 @@ function AppInner() {
       )}
       {addingPerson && <AddPersonModal onClose={() => setAddingPerson(false)} />}
       {notePerson && <QuickNoteModal person={notePerson} onClose={() => setNoteFor(null)} />}
+      {setupOpen && (
+        <SetupJourney
+          onClose={() => setSetupOpen(false)}
+          onOpenCensus={() => setCensusOpen(true)}
+        />
+      )}
+      {censusOpen && <SkyCensus onClose={() => setCensusOpen(false)} />}
       {mirrorOpen && <EffortMirror onClose={() => setMirrorOpen(false)} />}
       {accountOpen && <AccountPanel onClose={() => setAccountOpen(false)} />}
       {landingOpen && (
@@ -287,6 +307,9 @@ function AppInner() {
               dispatch({ type: 'clear_all' })
               setSelectedId(null)
               setView('closeness')
+              // The empty sky doesn't have to be filled star by star —
+              // offer the setup journey straight away.
+              setSetupOpen(true)
             }
           }}
         />

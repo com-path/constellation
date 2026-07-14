@@ -134,9 +134,11 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
         <section className="landing-section landing-final">
           <h2>Sparseness is a feature</h2>
           <p>
-            You won't import 400 contacts. You'll place people deliberately, one by one —
-            choosing who belongs in your constellation is part of the point. Start with the
-            person you'd call first with big news, and let the sky grow slowly, the way real
+            You won't dump 400 contacts into orbit. Bring names in however suits you — pick
+            them from your device, brain-dump them in a few lines, or answer the sky census's
+            questions about your communities and favourite memories — but nothing lands
+            without your say-so, and choosing who belongs is part of the point. Start with
+            the person you'd call first with big news, and let the sky grow the way real
             friendship does.
           </p>
           <button className="btn landing-cta" onClick={onEnter}>

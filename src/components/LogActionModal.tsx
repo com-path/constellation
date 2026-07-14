@@ -2,11 +2,13 @@ import { useState } from 'react'
 import type { ActionType, Modality } from '../types'
 import { ACTION_TYPE_META, ACTION_TYPE_ORDER, MODALITY_NAMES, uid } from '../types'
 import { useStore } from '../store/store'
+import { blankPerson } from '../lib/skyBuilder'
 import { dateInputToTs, todayInput } from '../lib/dates'
 import { Modal } from './ui'
 
 // Feather-light logging (§8.2a): two seconds, not two minutes.
 // Preselect a person when opened from their page; group moments touch many edges.
+// Mentioning someone new mid-log places them on the spot — the sky fills in flow.
 
 const MODALITIES: Modality[] = ['message', 'call', 'in_person', 'letter', 'gift', 'introduction']
 
@@ -26,6 +28,22 @@ export function LogActionModal({
 
   const toggle = (id: string) =>
     setParticipants((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]))
+
+  const [newName, setNewName] = useState('')
+  const addNewPerson = () => {
+    const name = newName.trim()
+    if (!name) return
+    setNewName('')
+    // If they typed someone already in the sky, just select that star.
+    const existing = state.people.find((p) => p.name.toLowerCase() === name.toLowerCase())
+    if (existing) {
+      if (!participants.includes(existing.id)) toggle(existing.id)
+      return
+    }
+    const person = blankPerson(name, 'Elsewhere', 'outer')
+    dispatch({ type: 'add_person', person, knows: [] })
+    setParticipants((cur) => [...cur, person.id])
+  }
 
   const save = () => {
     dispatch({
@@ -59,6 +77,23 @@ export function LogActionModal({
           </button>
         ))}
       </div>
+      <div className="add-row">
+        <input
+          placeholder="Someone new? Type their name…"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && addNewPerson()}
+        />
+        <button className="btn small" onClick={addNewPerson} disabled={!newName.trim()}>
+          Add
+        </button>
+      </div>
+      {newName.trim() !== '' && (
+        <p className="hint">
+          They'll be placed in the outer field and selected here — draw them inward any time,
+          from their page.
+        </p>
+      )}
 
       <h4>What kind of moment?</h4>
       <div className="type-grid">

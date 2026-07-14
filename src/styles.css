@@ -1311,3 +1311,137 @@ h4 .hint {
     grid-template-columns: 1fr;
   }
 }
+
+/* --- Setup journey (populate your sky) ------------------------------------ */
+
+.setup-progress {
+  margin: 0 0 1rem;
+  justify-content: flex-start;
+}
+
+.setup-sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.file-btn {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+}
+
+.file-btn input[type='file'] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.setup-count {
+  color: var(--gold);
+  font-size: 0.85rem;
+  margin: 0.5rem 0;
+}
+
+.setup-warn {
+  color: #d9a05c;
+  font-size: 0.85rem;
+  border: 1px solid rgba(217, 160, 92, 0.35);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+}
+
+textarea.braindump {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+.stage-list {
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+  max-height: 40vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.stage-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+}
+
+.stage-list li.stage-off .stage-name,
+.stage-list li.stage-off .stage-context,
+.stage-list li.stage-off .ring-select {
+  opacity: 0.45;
+}
+
+.stage-name {
+  flex: 1 1 8rem;
+  min-width: 6rem;
+}
+
+.stage-context {
+  flex: 1.4 1 10rem;
+  min-width: 7rem;
+}
+
+.stage-list .ring-select {
+  flex: 0 0 auto;
+  max-width: 12rem;
+}
+
+.stage-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.stage-dupe {
+  color: #d9a05c;
+  border: 1px solid rgba(217, 160, 92, 0.35);
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+}
+
+@media (max-width: 700px) {
+  .stage-list li {
+    flex-wrap: wrap;
+  }
+}
+
+/* --- Sky census ------------------------------------------------------------ */
+
+.census-count {
+  margin: 0 0 0.75rem;
+}
+
+.census-question {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 500;
+  font-size: 1.3rem;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  margin: 0 0 0.25rem;
+}
+
+.census-placed {
+  color: var(--gold);
+  font-size: 1rem;
+  margin: 1rem 0;
+}
+
+.chip.chip-new {
+  border-style: dashed;
+  color: var(--gold);
+  border-color: rgba(201, 176, 120, 0.55);
+}

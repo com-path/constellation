@@ -19,6 +19,7 @@ const STORAGE_KEY = 'constellation-state-v1'
 
 export type Action =
   | { type: 'add_person'; person: Person; knows: Array<{ otherId: string; context: string }> }
+  | { type: 'add_people'; people: Person[]; edges: Edge[] }
   | { type: 'update_person'; person: Person }
   | { type: 'remove_person'; personId: string }
   | { type: 'move_ring'; personId: string; ring: Ring }
@@ -47,6 +48,23 @@ function reducer(state: AppState, action: Action): AppState {
         introducedByUser: false,
       }))
       return { ...state, people: [...state.people, action.person], edges: [...state.edges, ...edges] }
+    }
+    case 'add_people': {
+      // Bulk placement from the setup journey / census. Edges are deduped the
+      // same way add_edge does it, so a re-threaded context never doubles up.
+      const existingKeys = new Set(state.edges.map((e) => pairKey(e.a, e.b)))
+      const edges = action.edges.filter((e) => {
+        if (e.a === e.b) return false
+        const key = pairKey(e.a, e.b)
+        if (existingKeys.has(key)) return false
+        existingKeys.add(key)
+        return true
+      })
+      return {
+        ...state,
+        people: [...state.people, ...action.people],
+        edges: [...state.edges, ...edges],
+      }
     }
     case 'update_person':
       return {
